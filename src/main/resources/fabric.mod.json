@@ -1,0 +1,19 @@
+{
+	"schemaVersion": 1,
+	"id": "neupv",
+	"version": "${version}",
+	"name": "NEU Profile Viewer (port 26.3)",
+	"description": "Port of the NotEnoughUpdates profile viewer (/pv) to Minecraft 26.3.",
+	"authors": ["Enzo Turpin"],
+	"license": "LGPL-3.0-or-later",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["dev.neupv.client.NeuPvClient"]
+	},
+	"depends": {
+		"fabricloader": ">=0.20.1",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
