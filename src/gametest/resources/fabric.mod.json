@@ -1,0 +1,11 @@
+{
+	"schemaVersion": 1,
+	"id": "neupv-test",
+	"version": "1.0.0",
+	"name": "NeuPv tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": ["dev.neupv.test.ProfileViewerClientGameTest"]
+	},
+	"depends": {"neupv": "*"}
+}
