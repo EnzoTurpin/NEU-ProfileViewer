@@ -5,7 +5,7 @@
 	"name": "NeuPv tests",
 	"environment": "client",
 	"entrypoints": {
-		"fabric-client-gametest": ["dev.neupv.test.ProfileViewerClientGameTest"]
+		"fabric-client-gametest": ["dev.neupv.test.ProfileViewerClientGameTest", "dev.neupv.test.LevelGameTest"]
 	},
 	"depends": {"neupv": "*"}
 }
