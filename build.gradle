@@ -12,10 +12,20 @@ loom {
 	}
 }
 
+repositories {
+	maven { name = 'nea'; url = 'https://repo.nea.moe/releases' }
+}
+
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	// Lisp interpreter for NEU-REPO constants/hotmlayout.json (HOTM tab), bundled with the Kotlin stdlib it needs
+	implementation "moe.nea:nealisp:1.1.0"
+	include "moe.nea:nealisp:1.1.0"
+	include "org.jetbrains.kotlin:kotlin-stdlib:1.7.20"
+	include "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.7.20"
+	include "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.20"
 }
 
 processResources {
