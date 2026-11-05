@@ -94,9 +94,7 @@ public class DungeonPage extends PvPage {
 	private static ItemStack modeIcon(String repoId, net.minecraft.world.item.Item fallback, String name) {
 		PvItem item = LegacyItems.fromRepo(repoId);
 		ItemStack s = item != null ? item.stack().copy() : new ItemStack(fallback);
-		s.remove(DataComponents.CUSTOM_NAME);
-		s.set(DataComponents.ITEM_NAME, Component.literal(name));
-		return s;
+		return LegacyItems.rename(s, name);
 	}
 
 	private EditBox levelField(int x, int y) {

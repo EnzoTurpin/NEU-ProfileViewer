@@ -35,6 +35,16 @@ public final class Draw {
 		g.blit(RenderPipelines.GUI_TEXTURED, id, x, y, u, v, w, h, rw, rh, texW, texH);
 	}
 
+	/** Same as rect, multiplied by an ARGB colour (e.g. 0xFF909090 to darken). */
+	public static void rectTinted(GuiGraphicsExtractor g, Identifier id, int x, int y, int w, int h, float uMin, float uMax, float vMin, float vMax, int texW, int texH, int argb) {
+		int u = Math.round(uMin * texW);
+		int v = Math.round(vMin * texH);
+		int rw = Math.round((uMax - uMin) * texW);
+		int rh = Math.round((vMax - vMin) * texH);
+		if (rw <= 0 || rh <= 0) return;
+		g.blit(RenderPipelines.GUI_TEXTURED, id, x, y, u, v, w, h, rw, rh, texW, texH, argb);
+	}
+
 	public static void full(GuiGraphicsExtractor g, Identifier id, int x, int y, int w, int h) {
 		g.blit(RenderPipelines.GUI_TEXTURED, id, x, y, 0, 0, w, h, w, h, w, h);
 	}

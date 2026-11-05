@@ -515,6 +515,11 @@ public class BasicPage extends PvPage {
 	}
 
 	@Override
+	public boolean wantsRealRelease() {
+		return true; // panorama drag
+	}
+
+	@Override
 	public void mouseReleased(double mouseX, double mouseY, int button) {
 		if (backgroundClickedX != -1) {
 			screen.backgroundRotation += (float) (mouseX - backgroundClickedX);
