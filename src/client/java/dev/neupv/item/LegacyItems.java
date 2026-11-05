@@ -52,7 +52,9 @@ public final class LegacyItems {
 	private static final String[] RARITY_PREFIX = {"§f§l", "§a§l", "§9§l", "§5§l", "§6§l", "§d§l", "§c§l", "§c§l", "§b§l"};
 	private static JsonObject table;
 
-	record LegacyStackSpec(String legacyName, int damage, int count, String name, List<String> lore, String texture, Integer color, boolean glint) {}
+	record LegacyStackSpec(String legacyName, int damage, int count, String name, List<String> lore, String texture, Integer color, boolean glint, String internalName) {}
+
+	private static final Pattern ITEM_MODEL = Pattern.compile("ItemModel:\\\\?\"([a-z0-9_.-]+:[a-z0-9_./-]+)\\\\?\"");
 
 	private LegacyItems() {}
 
@@ -110,7 +112,7 @@ public final class LegacyItems {
 		boolean glint = !tag.getListOrEmpty("ench").isEmpty();
 		String sbId = tag.getCompoundOrEmpty("ExtraAttributes").getStringOr("id", null);
 		String internal = resolveInternalName(sbId, tag);
-		LegacyStackSpec spec = new LegacyStackSpec(legacyName, damage, count, name, lore, texture, color, glint);
+		LegacyStackSpec spec = new LegacyStackSpec(legacyName, damage, count, name, lore, texture, color, glint, internal);
 		return new PvItem(internal, name, lore, count, tag, spec);
 	}
 
@@ -131,7 +133,7 @@ public final class LegacyItems {
 		JsonArray l = dev.neupv.util.J.arr(json, "lore");
 		if (l != null) for (JsonElement e : l) lore.add(e.getAsString());
 		String name = dev.neupv.util.J.str(json, "displayname", internalName);
-		LegacyStackSpec spec = new LegacyStackSpec(itemId, damage, 1, name, lore, texture, color, nbt.contains("ench:["));
+		LegacyStackSpec spec = new LegacyStackSpec(itemId, damage, 1, name, lore, texture, color, nbt.contains("ench:["), internalName);
 		return new PvItem(internalName, name, lore, 1, new CompoundTag(), spec);
 	}
 
@@ -144,7 +146,7 @@ public final class LegacyItems {
 
 	/** Player head with a base64 texture. */
 	public static ItemStack skull(String name, String texture) {
-		return build(new LegacyStackSpec("skull", 3, 1, name, List.of(), texture, null, false));
+		return build(new LegacyStackSpec("skull", 3, 1, name, List.of(), texture, null, false, null));
 	}
 
 	/**
@@ -210,12 +212,44 @@ public final class LegacyItems {
 		if (spec.name() != null && !spec.name().isEmpty()) s.set(DataComponents.ITEM_NAME, Component.literal(spec.name()));
 		if (spec.color() != null) s.set(DataComponents.DYED_COLOR, new DyedItemColor(spec.color()));
 		if (spec.glint()) s.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		applyHypixelModel(s, spec.internalName());
 		if (spec.texture() != null && item == Items.PLAYER_HEAD) {
-			PropertyMap props = new PropertyMap(ImmutableMultimap.of("textures", new Property("textures", spec.texture())));
-			UUID uuid = UUID.nameUUIDFromBytes(spec.texture().getBytes(StandardCharsets.UTF_8));
+			String texture = cleanBase64(spec.texture());
+			PropertyMap props = new PropertyMap(ImmutableMultimap.of("textures", new Property("textures", texture)));
+			UUID uuid = UUID.nameUUIDFromBytes(texture.getBytes(StandardCharsets.UTF_8));
 			s.set(DataComponents.PROFILE, ResolvableProfile.createResolved(new GameProfile(uuid, "neupv", props)));
 		}
 		return s;
+	}
+
+	/**
+	 * Hypixel now ships real item models in its server resource pack, and NEU-REPO items name them
+	 * (ItemModel:"hypixel_skyblock:item/..."). When that model is loaded (i.e. on Hypixel), use it so icons look
+	 * exactly like in game; otherwise keep the legacy vanilla fallback.
+	 */
+	private static void applyHypixelModel(ItemStack s, String internalName) {
+		if (internalName == null) return;
+		JsonObject repo = NeuRepo.item(internalName);
+		if (repo == null) return;
+		Matcher m = ITEM_MODEL.matcher(dev.neupv.util.J.str(repo, "nbttag", ""));
+		if (!m.find()) return;
+		Identifier model = Identifier.tryParse(m.group(1));
+		if (model == null) return;
+		try {
+			var models = net.minecraft.client.Minecraft.getInstance().getModelManager();
+			var missing = models.getItemModel(Identifier.fromNamespaceAndPath("neupv", "definitely_missing_model"));
+			if (models.getItemModel(model) != missing) s.set(DataComponents.ITEM_MODEL, model);
+		} catch (Exception ignored) {
+		}
+	}
+
+	/** Some repo/API skull textures have broken base64 padding that makes authlib throw; normalise it. */
+	static String cleanBase64(String b64) {
+		String t = b64.trim().replace("=", "");
+		int pad = (4 - t.length() % 4) % 4;
+		if (pad == 3) t = t.substring(0, t.length() - 1);
+		else t = t + "=".repeat(pad);
+		return t;
 	}
 
 	private static String J(JsonObject o, String section, String key) {
