@@ -101,6 +101,11 @@ public class BasicPage extends PvPage {
 	}
 
 	@Override
+	public boolean hasSideButtons() {
+		return true;
+	}
+
+	@Override
 	public void draw(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
 		initIcons();
 		SkyblockProfiles profile = screen.getProfile();

@@ -105,6 +105,11 @@ public class DungeonPage extends PvPage {
 	}
 
 	@Override
+	public boolean hasSideButtons() {
+		return true;
+	}
+
+	@Override
 	public void draw(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
 		initIcons();
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();

@@ -228,7 +228,7 @@ public class ProfileViewerScreen extends Screen {
 		boolean loaded = profile.getState() == SkyblockProfiles.State.LOADED && crashPage == null;
 		if (loaded) renderTabs(g, false);
 		renderRecentPlayers(g, false);
-		Draw.full(g, PV_BG, guiLeft, guiTop, SIZE_X, SIZE_Y);
+		drawPanel(g, loaded);
 		if (loaded) renderTabs(g, true);
 		renderRecentPlayers(g, true);
 
@@ -318,6 +318,43 @@ public class ProfileViewerScreen extends Screen {
 		if (d > 600000) Draw.centered(g, "§c§lManiac", cx, y + 20, true);
 	}
 
+	/**
+	 * Draws pv_bg with its border opened under the pressed tab / pressed side button, so they merge with the panel.
+	 * NEU got this from the GL depth buffer (the pressed tab was drawn in front, then the panel behind it); the
+	 * 26.3 GUI has no depth test, and the bottom of the tab texture is translucent, so the border must not be drawn.
+	 */
+	private void drawPanel(GuiGraphicsExtractor g, boolean loaded) {
+		int tabGap = Integer.MIN_VALUE;
+		int sideGap = Integer.MIN_VALUE;
+		if (loaded) {
+			int idx = visibleTabs().indexOf(currentPage);
+			if (idx >= 0) tabGap = idx * 28;
+			PvPage page = pages.get(currentPage);
+			if (page != null && page.hasSideButtons()) sideGap = (onSecondPage ? 1 : 0) * 28;
+		}
+		final int border = 4;
+		// top border strip, minus the pressed tab
+		bgPart(g, 0, 0, SIZE_X, border, tabGap, 28, true);
+		// left border strip, minus the pressed side button
+		bgPart(g, 0, border, border, SIZE_Y - border, sideGap == Integer.MIN_VALUE ? Integer.MIN_VALUE : sideGap - border, 28, false);
+		// everything else
+		Draw.rect(g, PV_BG, guiLeft + border, guiTop + border, SIZE_X - border, SIZE_Y - border,
+			border / (float) SIZE_X, 1f, border / (float) SIZE_Y, 1f, SIZE_X, SIZE_Y);
+	}
+
+	/** Draws the pv_bg region (x, y, w, h) except a gap of gapLen pixels starting at gapStart along the strip. */
+	private void bgPart(GuiGraphicsExtractor g, int x, int y, int w, int h, int gapStart, int gapLen, boolean horizontal) {
+		int len = horizontal ? w : h;
+		int[][] segments = gapStart == Integer.MIN_VALUE ? new int[][]{{0, len}} : new int[][]{{0, gapStart}, {gapStart + gapLen, len}};
+		for (int[] seg : segments) {
+			int a = Math.max(0, seg[0]), b = Math.min(len, seg[1]);
+			if (b <= a) continue;
+			int px = horizontal ? x + a : x, py = horizontal ? y : y + a;
+			int pw = horizontal ? b - a : w, ph = horizontal ? h : b - a;
+			g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, PV_BG, guiLeft + px, guiTop + py, px, py, pw, ph, pw, ph, SIZE_X, SIZE_Y);
+		}
+	}
+
 	private List<Page> visibleTabs() {
 		List<Page> out = new ArrayList<>();
 		for (int id : PvConfig.get().pageLayout) {
@@ -339,11 +376,9 @@ public class ProfileViewerScreen extends Screen {
 				float uMin = i == 0 ? 0 : 28 / 256f, uMax = i == 0 ? 28 / 256f : 56 / 256f;
 				Draw.rect(g, PV_ELEMENTS, x, y, 28, 32, uMin, uMax, 52 / 256f, 84 / 256f, 256, 256);
 			} else {
-				// darker than the selected tab so the open page is obvious (NEU relied on its blur for that)
-				Draw.rectTinted(g, PV_ELEMENTS, x, y, 28, 31, 0, 28 / 256f, 20 / 256f, 51 / 256f, 256, 256, 0xFF8A8A8A);
+				Draw.rect(g, PV_ELEMENTS, x, y, 28, 31, 0, 28 / 256f, 20 / 256f, 51 / 256f, 256, 256);
 			}
 			g.item(p.stack(), x + 6, y + 9);
-			if (!pressed) g.fill(x + 4, y + 7, x + 24, y + 27, 0x50000000);
 		}
 	}
 

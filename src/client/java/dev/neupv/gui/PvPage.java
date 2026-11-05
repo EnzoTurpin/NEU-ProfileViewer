@@ -36,6 +36,11 @@ public abstract class PvPage {
 
 	public void mouseReleased(double mouseX, double mouseY, int button) {}
 
+	/** True if the page draws the two left side buttons (PvWidgets.sideButtons); the panel border is opened under the pressed one. */
+	public boolean hasSideButtons() {
+		return false;
+	}
+
 	/** @return true if the key was consumed */
 	public boolean keyPressed(int keyCode) {
 		return false;
