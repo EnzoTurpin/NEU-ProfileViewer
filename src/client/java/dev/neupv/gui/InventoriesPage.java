@@ -131,6 +131,11 @@ public class InventoriesPage extends PvPage {
 	}
 
 	@Override
+	public boolean hasSideButtons() {
+		return true;
+	}
+
+	@Override
 	public void draw(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
 		initIcons();
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
@@ -200,6 +205,14 @@ public class InventoriesPage extends PvPage {
 
 		if (inventory == null) {
 			String strToRender = "Inventory API not enabled!";
+			// The member json says which inventories Hypixel actually sent: if the inventory API is on but this one
+			// is absent (e.g. wardrobe_contents for some profiles), say so instead of blaming the API setting.
+			boolean apiOn = J.get(selectedProfile.getProfileJson(), "inventory.inv_contents") != null;
+			if (apiOn && !selectedInventory.equals("backpack_contents")) {
+				Draw.centered(g, "§cHypixel's API sent no data", guiLeft + 317, guiTop + 101, true);
+				Draw.centered(g, "§cfor this inventory.", guiLeft + 317, guiTop + 112, true);
+				return;
+			}
 			if (selectedInventory.equalsIgnoreCase("personal_vault_contents")) {
 				strToRender = "Personal Vault API not enabled!";
 			} else if (selectedInventory.equalsIgnoreCase("backpack_contents")) {
