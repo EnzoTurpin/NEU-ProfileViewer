@@ -153,11 +153,17 @@ public class GardenPage extends PvPage {
 			// NEU tested x..x+20 from the item corner, 2 px past the slot; the slot is used here
 			if (hover(x - 2, y - 2, 20, 20)) screen.tooltipToDisplay = PvWidgets.lines("§7Barn Skin: " + skin.name());
 		} else {
-			g.item(new ItemStack(Items.BARRIER), x, y);
+			// Skin newer than the NEU repo (e.g. "fast_food"): show its name instead of an error
+			g.item(new ItemStack(Items.OAK_PLANKS), x, y);
 			if (hover(x - 2, y - 2, 20, 20)) {
-				screen.tooltipToDisplay = PvWidgets.lines("§cUnknown barn Skin: " + gardenData.selectedBarnSkin,
-					"§cIf you expected it to be there please report it",
-					"§cto the NEU repository (constants/garden.json).");
+				String raw = String.valueOf(gardenData.selectedBarnSkin);
+				StringBuilder pretty = new StringBuilder();
+				for (String w : raw.split("_")) {
+					if (w.isEmpty()) continue;
+					if (!pretty.isEmpty()) pretty.append(' ');
+					pretty.append(Character.toUpperCase(w.charAt(0))).append(w.substring(1).toLowerCase(java.util.Locale.ROOT));
+				}
+				screen.tooltipToDisplay = PvWidgets.lines("§7Barn Skin: §f" + pretty);
 			}
 		}
 	}

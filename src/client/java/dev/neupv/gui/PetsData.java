@@ -224,7 +224,7 @@ public final class PetsData {
 			}
 			addXpLines(lore, level);
 		}
-		stack.set(DataComponents.ITEM_NAME, Component.literal(name));
+		LegacyItems.rename(stack, name);
 		return new PetDisplay(pet, type, rarity, stack, name, lore, level);
 	}
 

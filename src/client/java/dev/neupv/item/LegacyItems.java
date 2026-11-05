@@ -139,8 +139,17 @@ public final class LegacyItems {
 
 	/** Simple vanilla icon with a name, for tabs and skill icons. */
 	public static ItemStack icon(Item item, String name) {
-		ItemStack s = new ItemStack(item);
-		s.set(DataComponents.ITEM_NAME, Component.literal(name));
+		return rename(new ItemStack(item), name);
+	}
+
+	/**
+	 * Gives an item a display name that always wins: ITEM_NAME alone is ignored by player heads ("X's Head") and
+	 * potions ("Uncraftable Potion"), so CUSTOM_NAME is set too, without the default italics.
+	 */
+	public static ItemStack rename(ItemStack s, String name) {
+		Component c = Component.literal(name);
+		s.set(DataComponents.ITEM_NAME, c);
+		s.set(DataComponents.CUSTOM_NAME, c.copy().withStyle(st -> st.withItalic(false)));
 		return s;
 	}
 
