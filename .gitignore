@@ -5,3 +5,4 @@ instance/
 *.log
 .idea/
 out/
+src/gametest/resources/realdata/

@@ -17,6 +17,7 @@
 			"dev.neupv.test.MiningGameTest",
 			"dev.neupv.test.MuseumGameTest",
 			"dev.neupv.test.ProfileViewerClientGameTest",
+			"dev.neupv.test.RealDataGameTest",
 			"dev.neupv.test.TrophyBestiaryBingoGameTest"
 		]
 	},
