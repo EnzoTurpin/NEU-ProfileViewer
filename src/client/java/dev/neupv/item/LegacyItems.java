@@ -209,7 +209,12 @@ public final class LegacyItems {
 		Identifier id = Identifier.tryParse("minecraft:" + modern);
 		if (id != null && BuiltInRegistries.ITEM.containsKey(id)) item = BuiltInRegistries.ITEM.getValue(id);
 		ItemStack s = new ItemStack(item, Math.max(1, spec.count()));
-		if (spec.name() != null && !spec.name().isEmpty()) s.set(DataComponents.ITEM_NAME, Component.literal(spec.name()));
+		if (spec.name() != null && !spec.name().isEmpty()) {
+			Component name = Component.literal(spec.name());
+			s.set(DataComponents.ITEM_NAME, name);
+			// Player heads take their name from the profile ("X's Head") unless a custom name is set.
+			if (item == Items.PLAYER_HEAD) s.set(DataComponents.CUSTOM_NAME, name.copy().withStyle(st -> st.withItalic(false)));
+		}
 		if (spec.color() != null) s.set(DataComponents.DYED_COLOR, new DyedItemColor(spec.color()));
 		if (spec.glint()) s.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 		applyHypixelModel(s, spec.internalName());
@@ -245,7 +250,7 @@ public final class LegacyItems {
 
 	/** Some repo/API skull textures have broken base64 padding that makes authlib throw; normalise it. */
 	static String cleanBase64(String b64) {
-		String t = b64.trim().replace("=", "");
+		String t = b64.replaceAll("[^A-Za-z0-9+/]", "");
 		int pad = (4 - t.length() % 4) % 4;
 		if (pad == 3) t = t.substring(0, t.length() - 1);
 		else t = t + "=".repeat(pad);
