@@ -25,6 +25,15 @@ public abstract class PvPage {
 		return false;
 	}
 
+	/**
+	 * NEU acted on mouse release in several pages. Here the screen calls mouseReleased right after a press that
+	 * mouseClicked did not consume (so one click = one action), unless the page needs the real release
+	 * (drag gestures) and returns true here.
+	 */
+	public boolean wantsRealRelease() {
+		return false;
+	}
+
 	public void mouseReleased(double mouseX, double mouseY, int button) {}
 
 	/** @return true if the key was consumed */

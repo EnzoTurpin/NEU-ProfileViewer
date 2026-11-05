@@ -91,8 +91,10 @@ public final class PvWidgets {
 				vMax = 1f;
 			}
 		}
-		Draw.rect(g, ProfileViewerScreen.PV_ELEMENTS, x, y, pressed ? 32 : 28, 28, uMin, uMax, vMin, vMax, 256, 256);
+		if (pressed) Draw.rect(g, ProfileViewerScreen.PV_ELEMENTS, x, y, 32, 28, uMin, uMax, vMin, vMax, 256, 256);
+		else Draw.rectTinted(g, ProfileViewerScreen.PV_ELEMENTS, x, y, 28, 28, uMin, uMax, vMin, vMax, 256, 256, 0xFF8A8A8A);
 		g.item(icon, x + 8, y + 7);
+		if (!pressed) g.fill(x + 6, y + 5, x + 26, y + 25, 0x50000000);
 		if (mouseY > y && mouseX > x && mouseY < y + 28 && mouseX < x + 28) screen.tooltipToDisplay = List.of(icon.getHoverName());
 	}
 

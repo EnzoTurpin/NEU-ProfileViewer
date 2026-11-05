@@ -6,6 +6,7 @@
 	"environment": "client",
 	"entrypoints": {
 		"fabric-client-gametest": [
+			"dev.neupv.test.ClickFixesGameTest",
 			"dev.neupv.test.CollectionsPetsGameTest",
 			"dev.neupv.test.CrimsonRiftGameTest",
 			"dev.neupv.test.DungeonGameTest",

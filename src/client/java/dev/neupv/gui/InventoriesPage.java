@@ -67,7 +67,7 @@ public class InventoriesPage extends PvPage {
 
 	/** NEU invNameToDisplayMap order (also the 1-8 hotkeys). */
 	private static final String[] INV_KEYS = {"inv_contents", "ender_chest_contents", "backpack_contents",
-		"personal_vault_contents", "talisman_bag", "wardrobe_contents", "fishing_bag", "potion_bag"};
+		"personal_vault_contents", "talisman_bag", "wardrobe_contents", "potion_bag"};
 	private static Map<String, ItemStack> invNameToDisplayMap;
 	private static ItemStack fillerStack, inventoriesIcon, sacksIcon;
 
@@ -116,7 +116,6 @@ public class InventoriesPage extends PvPage {
 		m.put("personal_vault_contents", renamed("IRON_CHEST", Items.PLAYER_HEAD, "§7Personal Vault"));
 		m.put("talisman_bag", LegacyItems.icon(Items.GOLDEN_APPLE, "§7Accessory Bag"));
 		m.put("wardrobe_contents", LegacyItems.icon(Items.LEATHER_CHESTPLATE, "§7Wardrobe"));
-		m.put("fishing_bag", LegacyItems.icon(Items.COD, "§7Fishing Bag"));
 		m.put("potion_bag", LegacyItems.icon(Items.POTION, "§7Potion Bag"));
 		invNameToDisplayMap = m;
 		fillerStack = new ItemStack(byId("black_stained_glass_pane"));
@@ -361,12 +360,11 @@ public class InventoriesPage extends PvPage {
 			}
 		}
 		if (ProfileViewerScreen.isOnSecondPage()) return sacksPage.mouseClicked(mouseX, mouseY, button);
-		return false;
+		// NEU switched inventories on mouse release; 26.3 does not reliably deliver releases to the page, so act on press.
+		return button == 0 && handleMainClick(mouseX, mouseY);
 	}
 
-	@Override
-	public void mouseReleased(double mouseX, double mouseY, int button) {
-		if (button != 0 || ProfileViewerScreen.isOnSecondPage()) return;
+	private boolean handleMainClick(double mouseX, double mouseY) {
 		initIcons();
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
 		int i = 0;
@@ -375,17 +373,17 @@ public class InventoriesPage extends PvPage {
 			int y = guiTop + 26 + 34 * (i / 3);
 			if (mouseX >= x && mouseX <= x + 16 && mouseY >= y && mouseY <= y + 16) {
 				selectInventory(key);
-				return;
+				return true;
 			}
 			i++;
 		}
 
 		SkyblockProfiles.SkyblockProfile selectedProfile = getSelectedProfile();
-		if (selectedProfile == null) return;
+		if (selectedProfile == null) return false;
 		Cell[][][] inventories = getItemsForInventory(selectedProfile.getInventoryInfo(), selectedInventory);
 		if (currentInventoryIndex >= inventories.length) currentInventoryIndex = inventories.length - 1;
 		if (currentInventoryIndex < 0) currentInventoryIndex = 0;
-		if (inventories[currentInventoryIndex] == null) return;
+		if (inventories[currentInventoryIndex] == null) return false;
 
 		int staticSelectorHeight = guiTop + 177;
 		if (mouseY > staticSelectorHeight && mouseY < staticSelectorHeight + 16 && mouseX > guiLeft + 320 - 12 && mouseX < guiLeft + 320 + 12) {
@@ -395,7 +393,9 @@ public class InventoriesPage extends PvPage {
 			} else if (currentInventoryIndex < inventories.length - 1) {
 				currentInventoryIndex++;
 			}
+			return true;
 		}
+		return false;
 	}
 
 	private void selectInventory(String key) {
@@ -411,8 +411,8 @@ public class InventoriesPage extends PvPage {
 	public boolean keyPressed(int keyCode) {
 		if (ProfileViewerScreen.isOnSecondPage()) return false;
 		int idx = -1;
-		if (keyCode >= KEY_1 && keyCode <= KEY_1 + 7) idx = keyCode - KEY_1;
-		else if (keyCode >= KEY_KP_1 && keyCode <= KEY_KP_1 + 7) idx = keyCode - KEY_KP_1;
+		if (keyCode >= KEY_1 && keyCode < KEY_1 + INV_KEYS.length) idx = keyCode - KEY_1;
+		else if (keyCode >= KEY_KP_1 && keyCode < KEY_KP_1 + INV_KEYS.length) idx = keyCode - KEY_KP_1;
 		if (idx < 0) return false;
 		selectInventory(INV_KEYS[idx]);
 		return true;

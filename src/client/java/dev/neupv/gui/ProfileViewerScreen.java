@@ -339,9 +339,11 @@ public class ProfileViewerScreen extends Screen {
 				float uMin = i == 0 ? 0 : 28 / 256f, uMax = i == 0 ? 28 / 256f : 56 / 256f;
 				Draw.rect(g, PV_ELEMENTS, x, y, 28, 32, uMin, uMax, 52 / 256f, 84 / 256f, 256, 256);
 			} else {
-				Draw.rect(g, PV_ELEMENTS, x, y, 28, 31, 0, 28 / 256f, 20 / 256f, 51 / 256f, 256, 256);
+				// darker than the selected tab so the open page is obvious (NEU relied on its blur for that)
+				Draw.rectTinted(g, PV_ELEMENTS, x, y, 28, 31, 0, 28 / 256f, 20 / 256f, 51 / 256f, 256, 256, 0xFF8A8A8A);
 			}
 			g.item(p.stack(), x + 6, y + 9);
+			if (!pressed) g.fill(x + 4, y + 7, x + 24, y + 27, 0x50000000);
 		}
 	}
 
@@ -441,7 +443,9 @@ public class ProfileViewerScreen extends Screen {
 				}
 			}
 			try {
-				if (pages.get(currentPage).mouseClicked(mx, my, button)) return true;
+				PvPage page = pages.get(currentPage);
+				if (page.mouseClicked(mx, my, button)) return true;
+				if (!page.wantsRealRelease()) page.mouseReleased(mx, my, button);
 			} catch (Exception e) {
 				crashPage = new CrashPage(this, e, currentPage.name());
 				return true;
@@ -495,7 +499,7 @@ public class ProfileViewerScreen extends Screen {
 	@Override
 	public boolean mouseReleased(MouseButtonEvent event) {
 		PvPage page = pages.get(currentPage);
-		if (page != null) page.mouseReleased(event.x(), event.y(), event.button());
+		if (page != null && page.wantsRealRelease()) page.mouseReleased(event.x(), event.y(), event.button());
 		return super.mouseReleased(event);
 	}
 
