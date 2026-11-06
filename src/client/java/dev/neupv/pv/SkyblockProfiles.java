@@ -40,7 +40,7 @@ public class SkyblockProfiles {
 		"backpack_contents", "personal_vault_contents", "wardrobe_contents", "potion_bag", "inv_contents", "talisman_bag",
 		"candy_inventory_contents", "equipment_contents");
 	private static final List<String> SKILLS = List.of("taming", "mining", "foraging", "enchanting", "carpentry", "farming",
-		"combat", "fishing", "alchemy", "runecrafting", "social");
+		"combat", "fishing", "alchemy", "runecrafting", "social", "hunting");
 	private static final String MOULBERRY_UUID = "d0e05de76067454dbeaec6d19d886191";
 
 	private final UUID uuid;
@@ -443,6 +443,8 @@ public class SkyblockProfiles {
 				int max = Level.cap(leveling, skill);
 				if (skill.equals("farming")) max += J.i(pj, "jacobs_contest.perks.farming_level_cap", 0);
 				if (skill.equals("taming")) max += J.arrOrEmpty(pj, "pets_data.pet_care.pet_types_sacrificed").size();
+				// Foraging cap upgrades (Galatea), sent by the API as a pseudo skill: 50 + bought levels
+				if (skill.equals("foraging")) max += J.i(pj, "player_data.experience.SKILL_FORAGING_extra_level_cap", 0);
 				out.put(skill, Level.of(arr, xp, max, false));
 			}
 			out.put("hotm", Level.of(J.arr(leveling, "HOTM"), (float) J.dbl(pj, "mining_core.experience", 0), Level.cap(leveling, "HOTM"), false));

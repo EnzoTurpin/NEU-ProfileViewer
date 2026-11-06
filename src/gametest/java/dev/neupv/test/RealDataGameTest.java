@@ -39,12 +39,19 @@ public class RealDataGameTest implements FabricClientGameTest {
 				mc.resizeGui();
 				SkyblockProfiles p = new SkyblockProfiles(Mojang.dashless(player.getAsJsonObject("player").get("uuid").getAsString()));
 				p.loadFromJson(profiles, player.getAsJsonObject("player"));
-				ProfileViewerScreen.currentPage = ProfileViewerScreen.Page.INVENTORIES;
+				ProfileViewerScreen.currentPage = ProfileViewerScreen.Page.BASIC;
 				ProfileViewerScreen.setOnSecondPage(false);
 				screen[0] = new ProfileViewerScreen(p);
 				mc.setScreenAndShow(screen[0]);
+				var lv = p.getProfile(p.getLatestProfileName()).getLevelingInfo();
+				TestData.check(lv.get("hunting") != null && lv.get("hunting").maxed && lv.get("hunting").level == 50, "hunting skill present and capped at 50");
+				TestData.check(lv.get("foraging").maxLevel == 54 && lv.get("foraging").level == 54, "foraging cap 50 + 4 extra levels = 54 (" + lv.get("foraging").level + ")");
+				TestData.check(lv.get("taming").maxLevel == 60 && lv.get("farming").maxLevel == 60, "taming and farming caps 60");
 			});
-			context.waitTicks(40);
+			context.waitTicks(100); // skin download
+			context.takeScreenshot("real-skills");
+			context.runOnClient(mc -> ProfileViewerScreen.currentPage = ProfileViewerScreen.Page.INVENTORIES);
+			context.waitTicks(20);
 			for (int i = 0; i < 7; i++) {
 				double scale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
 				int x = screen[0].guiLeft() + 19 + 34 * (i % 3) + 8;
