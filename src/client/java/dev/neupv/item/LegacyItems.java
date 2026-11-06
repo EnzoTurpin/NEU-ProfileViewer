@@ -211,6 +211,14 @@ public final class LegacyItems {
 	}
 
 	static ItemStack build(LegacyStackSpec spec) {
+		// Items whose repo entry became plain paper + a Hypixel resource-pack model (trophy fish, July 2026):
+		// off Hypixel that model is missing, so fall back to the skull texture they had before.
+		if (spec.internalName() != null && hypixelModel(spec.internalName()) == null) {
+			String old = legacyTexture(spec.internalName());
+			if (old != null) {
+				spec = new LegacyStackSpec("skull", 3, spec.count(), spec.name(), spec.lore(), old, null, spec.glint(), null);
+			}
+		}
 		Item item = Items.BARRIER;
 		String modern = J(table(), "meta", spec.legacyName() + ":" + spec.damage());
 		if (modern == null) modern = J(table(), "byName", spec.legacyName());
@@ -242,19 +250,41 @@ public final class LegacyItems {
 	 * exactly like in game; otherwise keep the legacy vanilla fallback.
 	 */
 	private static void applyHypixelModel(ItemStack s, String internalName) {
-		if (internalName == null) return;
+		Identifier model = hypixelModel(internalName);
+		if (model != null) s.set(DataComponents.ITEM_MODEL, model);
+	}
+
+	/** The repo's Hypixel item model for this item if it is currently loaded (i.e. Hypixel's pack is active), else null. */
+	private static Identifier hypixelModel(String internalName) {
+		if (internalName == null) return null;
 		JsonObject repo = NeuRepo.item(internalName);
-		if (repo == null) return;
+		if (repo == null) return null;
 		Matcher m = ITEM_MODEL.matcher(dev.neupv.util.J.str(repo, "nbttag", ""));
-		if (!m.find()) return;
+		if (!m.find()) return null;
 		Identifier model = Identifier.tryParse(m.group(1));
-		if (model == null) return;
+		if (model == null || model.getNamespace().equals("minecraft")) return null;
 		try {
 			var models = net.minecraft.client.Minecraft.getInstance().getModelManager();
 			var missing = models.getItemModel(Identifier.fromNamespaceAndPath("neupv", "definitely_missing_model"));
-			if (models.getItemModel(model) != missing) s.set(DataComponents.ITEM_MODEL, model);
-		} catch (Exception ignored) {
+			return models.getItemModel(model) != missing ? model : null;
+		} catch (Exception e) {
+			return null;
 		}
+	}
+
+	private static JsonObject legacyTextures;
+
+	/** Skull texture an item had in the NEU repo before it switched to a Hypixel model (assets/neupv/data/legacy_textures.json). */
+	private static String legacyTexture(String internalName) {
+		if (legacyTextures == null) {
+			try (InputStream in = LegacyItems.class.getResourceAsStream("/assets/neupv/data/legacy_textures.json")) {
+				legacyTextures = in == null ? new JsonObject()
+					: JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("textures");
+			} catch (Exception e) {
+				legacyTextures = new JsonObject();
+			}
+		}
+		return legacyTextures.has(internalName) ? legacyTextures.get(internalName).getAsString() : null;
 	}
 
 	/** Some repo/API skull textures have broken base64 padding that makes authlib throw; normalise it. */
