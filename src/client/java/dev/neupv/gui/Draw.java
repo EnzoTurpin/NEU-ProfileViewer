@@ -120,55 +120,36 @@ public final class Draw {
 		}
 	}
 
-	private static int[] barPixels; // ARGB of hud/experience_bar_progress, 182x5
-	private static int barW = 182, barH = 5;
-
-	/** Pixels of the vanilla (or resource pack) XP bar progress sprite, read once. */
-	private static int[] barPixels() {
-		if (barPixels != null) return barPixels;
-		try (var in = Minecraft.getInstance().getResourceManager()
-			.open(Identifier.withDefaultNamespace("textures/gui/sprites/hud/experience_bar_progress.png"))) {
-			java.awt.image.BufferedImage img = javax.imageio.ImageIO.read(in);
-			barW = img.getWidth();
-			barH = img.getHeight();
-			barPixels = img.getRGB(0, 0, barW, barH, null, 0, barW);
-		} catch (Exception e) {
-			barPixels = new int[0];
-		}
-		return barPixels;
-	}
+	/**
+	 * NEU 1.8.9 drew its bars with the boss-bar rows of textures/gui/icons.png (v 79-84), not with the XP bar.
+	 * Those rows are flat bands; their HSV brightness, measured from the 1.8.9 texture, is below
+	 * (index = row 0..4). The leftmost/rightmost column is a darker border (rows 1-3) with transparent corners.
+	 */
+	private static final float[] NEU_BAR_VALUE = {0.29f, 0.93f, 0.73f, 0.55f, 0.29f};
+	private static final float NEU_BAR_EDGE_VALUE = 0.18f;
+	/** Hue of that boss-bar texture (#EC00B8), added like the shader does (hsv.x + amount + ...). */
+	private static final float NEU_BAR_HUE = 0.869f;
 
 	/**
-	 * Maxed bar, exact port of NEU's "make_gold" shader applied to the same XP bar texture as normal bars:
-	 * every texel keeps its brightness and alpha, its hue becomes hue + time / 10 s + 4 * screen-x (clip space),
-	 * and its saturation is scaled to 70 %. The 26.3 GUI cannot run custom GLSL, so it is drawn texel by texel.
+	 * Maxed bar, exact port of NEU's "make_gold" shader on NEU's own bar texture:
+	 * hue = texture hue + (startTime - now) / 10 s + 4 * screen-x (clip space), saturation = 1.0 * 0.7, brightness kept.
+	 * The 26.3 GUI cannot run custom GLSL, so it is drawn pixel by pixel with the same values.
 	 */
 	public static void goldBar(GuiGraphicsExtractor g, float x, float y, float xSize, long startTime) {
-		int[] px = barPixels();
-		int ix = Math.round(x), iy = Math.round(y), w = Math.round(xSize), half = Math.round(xSize / 2f);
-		if (px.length == 0) { // texture unreadable: plain full bar
-			bar(g, x, y, xSize, 1);
-			return;
-		}
+		int ix = Math.round(x), iy = Math.round(y), w = Math.round(xSize);
 		float guiWidth = Minecraft.getInstance().getWindow().getGuiScaledWidth();
 		float amount = (startTime - System.currentTimeMillis()) / 10000f;
 		org.joml.Vector2f p = new org.joml.Vector2f();
-		float[] hsb = new float[3];
 		for (int col = 0; col < w; col++) {
-			// same texel mapping as Draw.bar: left half from the start of the sprite, right half from its end
-			int u = col < half ? col : barW - (w - col);
-			if (u < 0 || u >= barW) continue;
+			boolean edge = col == 0 || col == w - 1;
 			g.pose().transformPosition(ix + col + 0.5f, iy, p);
 			float clipX = p.x / guiWidth * 2f - 1f;
-			for (int row = 0; row < Math.min(5, barH); row++) {
-				int argb = px[row * barW + u];
-				int a = argb >>> 24;
-				if (a == 0) continue;
-				java.awt.Color.RGBtoHSB((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, hsb);
-				float hue = (((hsb[0] + amount + clipX * 4f) % 1f) + 1f) % 1f;
-				// NEU scaled saturation to 70 %, which looks washed out on the 26.3 bar texture: keep it vivid instead
-				int rgb = java.awt.Color.HSBtoRGB(hue, Math.min(1f, 0.6f + hsb[1] * 0.45f), Math.min(1f, hsb[2] * 1.12f)) & 0xFFFFFF;
-				g.fill(ix + col, iy + row, ix + col + 1, iy + row + 1, (a << 24) | rgb);
+			float hue = (((NEU_BAR_HUE + amount + clipX * 4f) % 1f) + 1f) % 1f;
+			for (int row = 0; row < 5; row++) {
+				if (edge && (row == 0 || row == 4)) continue; // transparent corners
+				float value = edge ? NEU_BAR_EDGE_VALUE : NEU_BAR_VALUE[row];
+				int rgb = java.awt.Color.HSBtoRGB(hue, 0.7f, value) & 0xFFFFFF;
+				g.fill(ix + col, iy + row, ix + col + 1, iy + row + 1, 0xFF000000 | rgb);
 			}
 		}
 	}

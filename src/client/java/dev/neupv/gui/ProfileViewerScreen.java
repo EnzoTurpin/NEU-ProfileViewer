@@ -333,8 +333,14 @@ public class ProfileViewerScreen extends Screen {
 			if (page != null && page.hasSideButtons()) sideGap = (onSecondPage ? 1 : 0) * 28;
 		}
 		final int border = 4;
-		// top border strip, minus the pressed tab
-		bgPart(g, 0, 0, SIZE_X, border, tabGap, 28, true);
+		// top border strip (right of the corner), minus the pressed tab
+		bgPart(g, border, 0, SIZE_X - border, border, tabGap == Integer.MIN_VALUE ? Integer.MIN_VALUE : tabGap - border, 28, true);
+		// top-left corner: hidden under a pressed first tab; its last row belongs to the left border, so it is
+		// also left out under a pressed first side button (otherwise 4 border pixels stick out above it)
+		if (tabGap != 0) {
+			int cornerRows = sideGap == 0 ? border - 1 : border;
+			g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, PV_BG, guiLeft, guiTop, 0, 0, border, cornerRows, border, cornerRows, SIZE_X, SIZE_Y);
+		}
 		// left border strip, minus the pressed side button
 		bgPart(g, 0, border, border, SIZE_Y - border, sideGap == Integer.MIN_VALUE ? Integer.MIN_VALUE : sideGap - border, 28, false);
 		// everything else
