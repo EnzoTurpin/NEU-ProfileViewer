@@ -447,7 +447,7 @@ public class SkyblockProfiles {
 				if (skill.equals("foraging")) max += J.i(pj, "player_data.experience.SKILL_FORAGING_extra_level_cap", 0);
 				out.put(skill, Level.of(arr, xp, max, false));
 			}
-			out.put("hotm", Level.of(J.arr(leveling, "HOTM"), (float) J.dbl(pj, "mining_core.experience", 0), Level.cap(leveling, "HOTM"), false));
+			out.put("hotm", Level.of(J.arr(leveling, "HOTM"), (float) SkillTree.hotmExperience(pj), Level.cap(leveling, "HOTM"), false));
 			float cataXp = (float) J.dbl(pj, "dungeons.dungeon_types.catacombs.experience", 0);
 			out.put("catacombs", Level.of(J.arr(leveling, "catacombs"), cataXp, Level.cap(leveling, "catacombs"), false));
 			out.put("cosmetic_catacombs", Level.of(J.arr(leveling, "catacombs"), cataXp, 100, false));

@@ -10,8 +10,6 @@ import dev.neupv.pv.Level;
 import dev.neupv.pv.SkyblockProfiles;
 import dev.neupv.util.Fmt;
 import dev.neupv.util.J;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
-import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -47,27 +45,20 @@ public class MiningPage extends PvPage {
 
 	private static ItemStack hotmSkillIcon, anvil;
 	private final MiningHotmTree tree = new MiningHotmTree();
-	private Event<ScreenMouseEvents.AllowMouseScroll> scrollEvent;
 	private int treeLeft, treeTop, treeRight, treeBottom;
 
 	public MiningPage(ProfileViewerScreen screen) {
 		super(screen);
 	}
 
-	/** ProfileViewerScreen does not forward scroll events to pages: listen with Fabric's per-screen events. */
-	private void hookScroll() {
-		Event<ScreenMouseEvents.AllowMouseScroll> event = ScreenMouseEvents.allowMouseScroll(screen);
-		if (event == scrollEvent) return;
-		scrollEvent = event;
-		event.register((s, mouseX, mouseY, horizontal, vertical) -> {
-			if (ProfileViewerScreen.currentPage == ProfileViewerScreen.Page.MINING
-				&& treeLeft < mouseX && mouseX < treeRight && treeTop < mouseY && mouseY < treeBottom) {
-				// NEU adds Mouse.getDWheel() (±120 per notch); one tree row per notch is easier to use.
-				tree.scroll += (int) Math.round(vertical * 24);
-				return false;
-			}
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+		if (treeLeft < mouseX && mouseX < treeRight && treeTop < mouseY && mouseY < treeBottom) {
+			// NEU adds Mouse.getDWheel() (±120 per notch); one tree row per notch is easier to use.
+			tree.scroll += (int) Math.round(vertical * 24);
 			return true;
-		});
+		}
+		return false;
 	}
 
 	@Override
@@ -76,7 +67,6 @@ public class MiningPage extends PvPage {
 			hotmSkillIcon = new ItemStack(Items.IRON_PICKAXE);
 			anvil = new ItemStack(Items.ANVIL);
 		}
-		hookScroll();
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
 		Draw.full(g, MINING_PAGE_TEXTURE, guiLeft, guiTop, ProfileViewerScreen.SIZE_X, ProfileViewerScreen.SIZE_Y);
 
@@ -84,7 +74,7 @@ public class MiningPage extends PvPage {
 		if (selected == null) return;
 		JsonObject member = selected.getProfileJson();
 		JsonObject core = J.objOrEmpty(member, "mining_core");
-		JsonObject nodes = J.objOrEmpty(core, "nodes");
+		JsonObject nodes = dev.neupv.pv.SkillTree.hotmNodes(member);
 
 		float xStart = 22, yStartTop = 27;
 		int x = guiLeft + 23, y = guiTop + 25, sectionWidth = 110;
@@ -130,7 +120,7 @@ public class MiningPage extends PvPage {
 		treeRight = guiLeft + 412;
 		treeBottom = guiTop + 185;
 		tree.render(g, screen, treeLeft, treeTop, treeRight, treeBottom, nodes, hotm == null ? 0 : hotm.level, mouseX, mouseY);
-		tree.markSelectedAbility(J.str(core, "selected_pickaxe_ability", null));
+		tree.markSelectedAbility(dev.neupv.pv.SkillTree.hotmSelectedAbility(member));
 
 		int forgeX = guiLeft + 149, forgeY = guiTop + 20;
 		Draw.rect(g, FORGE_SLOT_BACKGROUND, forgeX, forgeY, 16, 16, 0, 1, 0, 1, 20, 20);
