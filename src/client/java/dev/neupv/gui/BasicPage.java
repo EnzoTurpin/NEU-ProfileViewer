@@ -87,6 +87,7 @@ public class BasicPage extends PvPage {
 		skillIcons.put("fishing", LegacyItems.icon(Items.FISHING_ROD, "§bFishing"));
 		skillIcons.put("alchemy", LegacyItems.icon(Items.BREWING_STAND, "§9Alchemy"));
 		skillIcons.put("runecrafting", LegacyItems.icon(Items.MAGMA_CREAM, "§5Runecrafting"));
+		skillIcons.put("hunting", LegacyItems.icon(Items.LEAD, "§3Hunting")); // skill added after NEU 2.6.0
 		skillIcons.put("social", LegacyItems.icon(Items.EMERALD, "§2Social"));
 		skillIcons.put("zombie", LegacyItems.icon(Items.ROTTEN_FLESH, "§6Rev Slayer"));
 		skillIcons.put("spider", LegacyItems.icon(Items.SPIDER_EYE, "§6Tara Slayer"));
@@ -329,7 +330,8 @@ public class BasicPage extends PvPage {
 			if (bp != null) entityPlayer.setItemSlot(EquipmentSlot.HEAD, bp.stack());
 		}
 		int x = screen.guiLeft() + 63, y = screen.guiTop() + 135;
-		InventoryScreen.extractEntityInInventoryFollowsMouse(g, x - 40, y - 66, x + 40, y, 36, 0.0625f, mouseX, mouseY, entityPlayer);
+		// The entity is centred in this box and clipped to it: keep the centre (y - 33) but leave room above the head.
+		InventoryScreen.extractEntityInInventoryFollowsMouse(g, x - 40, y - 93, x + 40, y + 27, 36, 0.0625f, mouseX, mouseY, entityPlayer);
 	}
 
 	private void drawActivePet(GuiGraphicsExtractor g, SkyblockProfiles.SkyblockProfile selected) {
@@ -382,8 +384,9 @@ public class BasicPage extends PvPage {
 		for (Map.Entry<String, ItemStack> entry : skillIcons.entrySet()) {
 			String key = entry.getKey();
 			Level level = info.get(key);
-			int x = guiLeft + 237 + 86 * (position / 8);
-			int y = guiTop + 24 + 21 * (position % 8);
+			// NEU: 2 columns of 8 rows (21 px). Hunting makes 17 entries, so 9 rows of 19 px.
+			int x = guiLeft + 237 + 86 * (position / 9);
+			int y = guiTop + 22 + 19 * (position % 9);
 			if (key.equals("social")) {
 				position--;
 				x = guiLeft + 132;
