@@ -29,6 +29,7 @@ public class NeuPvClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		PvConfig.load();
 		NeuRepo.loadAsync();
+		dev.neupv.item.BagIcons.register();
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			UrsaClient.tick();
 			if (mc.player != null) Mojang.remember(mc.player.getGameProfile().name(), mc.player.getUUID());

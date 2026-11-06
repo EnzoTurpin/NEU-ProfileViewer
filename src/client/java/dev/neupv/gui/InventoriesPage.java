@@ -244,7 +244,7 @@ public class InventoriesPage extends PvPage {
 
 		if (inventories.length > 1) {
 			String text = "Page " + (currentInventoryIndex + 1) + "/" + inventories.length;
-			g.text(Draw.font(), text, guiLeft + 320 - Draw.font().width(text) / 2, staticSelectorHeight - 10, 0xFF949494, false);
+			g.text(Draw.font(), text, guiLeft + 320 - Draw.font().width(text) / 2, staticSelectorHeight - 10, 0xFFFFFFFF, true);
 		}
 		g.text(Draw.font(), Fmt.stripColor(invNameToDisplayMap.get(selectedInventory).getHoverName().getString()), x + 8, y + 6, 0xFF404040, false);
 
@@ -276,13 +276,14 @@ public class InventoriesPage extends PvPage {
 
 	private void drawInventorySelector(GuiGraphicsExtractor g, int guiLeft, int guiTop, int mouseX, int mouseY, SkyblockProfiles.SkyblockProfile selectedProfile) {
 		int invNameIndex = 0;
-		for (Map.Entry<String, ItemStack> entry : invNameToDisplayMap.entrySet()) {
+		for (Map.Entry<String, ItemStack> rawEntry : invNameToDisplayMap.entrySet()) {
+			// Accessory / Potion Bag: Hypixel's own item once it was seen in a menu (see BagIcons)
+			Map.Entry<String, ItemStack> entry = Map.entry(rawEntry.getKey(),
+				dev.neupv.item.BagIcons.orDefault(rawEntry.getKey(), rawEntry.getValue()));
 			int x = 19 + 34 * (invNameIndex % 3);
 			int y = 26 + 34 * (invNameIndex / 3);
 			if (entry.getKey().equals(selectedInventory)) {
 				InventoriesUi.pressedFrame(g, guiLeft + x - 2, guiTop + y - 2);
-				x++;
-				y++;
 			} else {
 				InventoriesUi.frame(g, guiLeft + x - 2, guiTop + y - 2);
 			}
