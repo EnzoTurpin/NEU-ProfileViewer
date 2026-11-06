@@ -178,7 +178,7 @@ public class CollectionsPage extends PvPage {
 					screen.tooltipToDisplay = tt;
 				}
 				centeredColour(g, tierString, guiLeft + x + 10, guiTop + y - 4, tierColour);
-				centeredColour(g, Fmt.shortNumber(amount.doubleValue()), guiLeft + x + 10, guiTop + y + 26, GREY);
+				centeredColour(g, Fmt.shortNumber(amount.doubleValue()), guiLeft + x + 10, guiTop + y + 26, completedness >= 1 ? GOLD : 0xFFFFFFFF);
 			}
 		}
 

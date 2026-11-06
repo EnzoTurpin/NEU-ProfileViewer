@@ -143,11 +143,18 @@ public class ExtraPage extends PvPage {
 			String displayName = J.str(item, "displayname", essenceName);
 			int essenceNumber = J.i(profileInfo, "currencies.essence." + essenceName.replace("ESSENCE_", "") + ".current", 0);
 			float x = guiLeft + X_START + X_OFFSET;
-			float y = guiTop + yStart + (Y_OFFSET - 1) * i;
-			Draw.aligned(g, "§6" + displayName, "§f" + Fmt.shortNumber(essenceNumber), x, y, 76);
+			// NEU used 9 px per line; with 9 essences that overflows the box, so squeeze to fit 72 px
+			float spacing = Math.min(Y_OFFSET - 1, 72f / Math.max(1, essences.size()));
+			float y = guiTop + yStart + spacing * i;
+			float scale = Math.min(1f, spacing / (Y_OFFSET - 1));
+			g.pose().pushMatrix();
+			g.pose().translate(x, y);
+			g.pose().scale(scale, scale);
+			Draw.aligned(g, "§6" + displayName, "§f" + Fmt.shortNumber(essenceNumber), 0, 0, Math.round(76 / scale));
+			g.pose().popMatrix();
 
 			if (essenceShops == null) return;
-			if (mouseX >= x && mouseX <= x + 76 && mouseY >= y && mouseY <= y + 10) {
+			if (mouseX >= x && mouseX <= x + 76 && mouseY >= y && mouseY < y + spacing) {
 				List<Component> tt = new ArrayList<>();
 				JsonObject shop = J.obj(essenceShops, essenceName);
 				if (shop != null) {

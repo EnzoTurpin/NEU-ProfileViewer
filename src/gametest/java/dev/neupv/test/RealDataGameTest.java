@@ -31,6 +31,22 @@ public class RealDataGameTest implements FabricClientGameTest {
 		context.waitFor(mc -> NeuRepo.isLoaded(), 20 * 300);
 		try (TestSingleplayerContext world = context.worldBuilder().create()) {
 			context.waitTicks(60);
+			// a menu showing Hypixel's "Accessory Bag" item: BagIcons must remember it for the Storage tab
+			context.runOnClient(mc -> {
+				net.minecraft.world.item.ItemStack bag = new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PLAYER_HEAD);
+				dev.neupv.item.LegacyItems.rename(bag, "§aAccessory Bag");
+				bag.set(net.minecraft.core.component.DataComponents.PROFILE,
+					dev.neupv.item.LegacyItems.skull("x", TestData.HEAD_TEXTURE).get(net.minecraft.core.component.DataComponents.PROFILE));
+				mc.player.getInventory().setItem(9, bag);
+				mc.setScreenAndShow(new net.minecraft.client.gui.screens.inventory.InventoryScreen(mc.player));
+			});
+			context.waitTicks(25);
+			context.runOnClient(mc -> {
+				var icon = dev.neupv.item.BagIcons.orDefault("talisman_bag", net.minecraft.world.item.ItemStack.EMPTY);
+				TestData.check(icon.is(net.minecraft.world.item.Items.PLAYER_HEAD), "Hypixel's Accessory Bag item captured from a menu");
+				mc.player.getInventory().setItem(9, net.minecraft.world.item.ItemStack.EMPTY);
+				mc.setScreenAndShow(null);
+			});
 			ProfileViewerScreen[] screen = new ProfileViewerScreen[1];
 			context.runOnClient(mc -> {
 				PvConfig.get().useSoopyNetworth = false;
@@ -80,6 +96,12 @@ public class RealDataGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(10);
 			context.takeScreenshot("real-ec-last-page");
+			for (ProfileViewerScreen.Page page : new ProfileViewerScreen.Page[]{ProfileViewerScreen.Page.DUNGEON,
+				ProfileViewerScreen.Page.EXTRA, ProfileViewerScreen.Page.COLLECTIONS, ProfileViewerScreen.Page.TROPHY_FISH}) {
+				context.runOnClient(mc -> ProfileViewerScreen.currentPage = page);
+				context.waitTicks(40);
+				context.takeScreenshot("real-" + page.name().toLowerCase());
+			}
 		}
 	}
 

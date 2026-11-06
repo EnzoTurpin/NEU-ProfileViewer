@@ -186,7 +186,7 @@ public class DungeonPage extends PvPage {
 			for (int i = 1; i <= 7; i++) {
 				int w = font.width(String.valueOf(i));
 				int bx = x + SECTION_WIDTH * i / 8 - w / 2;
-				shadowedString(g, "§f" + i, bx + w / 2f, y3, 10);
+				shadowedString(g, (i == floorTime ? "§e" : "§f") + i, bx + w / 2f, y3, 10);
 			}
 
 			String base = "dungeons.dungeon_types." + dungeonString;

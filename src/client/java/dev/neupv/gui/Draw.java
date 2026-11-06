@@ -166,7 +166,8 @@ public final class Draw {
 				if (a == 0) continue;
 				java.awt.Color.RGBtoHSB((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, hsb);
 				float hue = (((hsb[0] + amount + clipX * 4f) % 1f) + 1f) % 1f;
-				int rgb = java.awt.Color.HSBtoRGB(hue, hsb[1] * 0.7f, hsb[2]) & 0xFFFFFF;
+				// NEU scaled saturation to 70 %, which looks washed out on the 26.3 bar texture: keep it vivid instead
+				int rgb = java.awt.Color.HSBtoRGB(hue, Math.min(1f, 0.6f + hsb[1] * 0.45f), Math.min(1f, hsb[2] * 1.12f)) & 0xFFFFFF;
 				g.fill(ix + col, iy + row, ix + col + 1, iy + row + 1, (a << 24) | rgb);
 			}
 		}
