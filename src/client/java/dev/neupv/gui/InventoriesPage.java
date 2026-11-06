@@ -374,7 +374,7 @@ public class InventoriesPage extends PvPage {
 		}
 		if (ProfileViewerScreen.isOnSecondPage()) return sacksPage.mouseClicked(mouseX, mouseY, button);
 		// NEU switched inventories on mouse release; 26.3 does not reliably deliver releases to the page, so act on press.
-		return button == 0 && handleMainClick(mouseX, mouseY);
+		return (button == 0 || button == 1) && handleMainClick(mouseX, mouseY);
 	}
 
 	private boolean handleMainClick(double mouseX, double mouseY) {

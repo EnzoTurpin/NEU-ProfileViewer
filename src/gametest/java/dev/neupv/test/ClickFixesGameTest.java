@@ -57,16 +57,22 @@ public class ClickFixesGameTest implements FabricClientGameTest {
 			context.takeScreenshot("click-enderchest");
 			clickAndCheck(context, screen[0], 5, "wardrobe_contents");
 			context.takeScreenshot("click-wardrobe");
+			// some players click with button 1 (right click / swapped mouse buttons): it must work too
+			clickAndCheck(context, screen[0], 2, "backpack_contents", 1);
 		}
 	}
 
 	private static void clickAndCheck(ClientGameTestContext context, ProfileViewerScreen screen, int index, String expected) {
+		clickAndCheck(context, screen, index, expected, 0);
+	}
+
+	private static void clickAndCheck(ClientGameTestContext context, ProfileViewerScreen screen, int index, String expected, int mouseButton) {
 		double scale = context.computeOnClient(mc -> mc.getWindow().getGuiScale());
 		int x = screen.guiLeft() + 19 + 34 * (index % 3) + 8;
 		int y = screen.guiTop() + 26 + 34 * (index / 3) + 8;
 		context.getInput().setCursorPos(x * scale, y * scale);
 		context.waitTick();
-		context.getInput().pressMouse(0);
+		context.getInput().pressMouse(mouseButton);
 		context.waitTicks(5);
 		String selected = context.computeOnClient(mc -> {
 			try {
@@ -80,6 +86,6 @@ public class ClickFixesGameTest implements FabricClientGameTest {
 				throw new RuntimeException(e);
 			}
 		});
-		TestData.check(expected.equals(selected), "real click opens " + expected + " (selected=" + selected + ")");
+		TestData.check(expected.equals(selected), "real click (button " + mouseButton + ") opens " + expected + " (selected=" + selected + ")");
 	}
 }

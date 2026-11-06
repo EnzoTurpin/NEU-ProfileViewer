@@ -383,7 +383,7 @@ public class GardenPage extends PvPage {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
-		if (button == 0 && mouseX >= guiLeft + 190 && mouseX <= guiLeft + 290 && mouseY >= guiTop + 51 && mouseY <= guiTop + 60) {
+		if ((button == 0 || button == 1) && mouseX >= guiLeft + 190 && mouseX <= guiLeft + 290 && mouseY >= guiTop + 51 && mouseY <= guiTop + 60) {
 			if (eliteData == null) return false;
 			String name = screen.getProfile().getDisplayName();
 			if (name == null) name = screen.getProfile().getUuidString();

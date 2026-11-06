@@ -71,7 +71,7 @@ public class CrashPage extends PvPage {
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		int cx = screen.guiLeft() + ProfileViewerScreen.SIZE_X / 2;
 		int by = screen.guiTop() + ProfileViewerScreen.SIZE_Y - 30;
-		if (button == 0 && Draw.within(mouseX, mouseY, cx - 40, by, 80, 12)) {
+		if ((button == 0 || button == 1) && Draw.within(mouseX, mouseY, cx - 40, by, 80, 12)) {
 			Minecraft.getInstance().keyboardHandler.setClipboard(report);
 			return true;
 		}

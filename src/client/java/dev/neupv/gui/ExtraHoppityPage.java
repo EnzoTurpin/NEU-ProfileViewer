@@ -171,7 +171,7 @@ public class ExtraHoppityPage extends PvPage {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
-		if (button == 0 && mouseX >= guiLeft + 160 && mouseX <= guiLeft + 270 && mouseY >= guiTop + 178 && mouseY <= guiTop + 190) {
+		if ((button == 0 || button == 1) && mouseX >= guiLeft + 160 && mouseX <= guiLeft + 270 && mouseY >= guiTop + 178 && mouseY <= guiTop + 190) {
 			ExtraHoppityLeaderboardRank.openWebsite(screen, lastRank);
 			return true;
 		}

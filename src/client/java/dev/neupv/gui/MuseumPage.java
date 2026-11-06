@@ -396,7 +396,7 @@ public class MuseumPage extends PvPage {
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
 		if (data == null || !data.ok()) return false;
-		if (button == 0) {
+		if (button == 0 || button == 1) {
 			for (Slot s : slots) {
 				if (mouseX >= s.x && mouseX <= s.x + 16 && mouseY >= s.y && mouseY <= s.y + 16 && data.saved.containsKey(s.id)) {
 					currentItemSelected = s.id;
