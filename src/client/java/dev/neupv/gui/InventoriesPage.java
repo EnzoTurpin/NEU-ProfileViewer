@@ -514,7 +514,11 @@ public class InventoriesPage extends PvPage {
 		if (jsonInv.isEmpty()) return new Cell[1][][];
 
 		int jsonInvSize;
-		if (useActualMax(invName)) {
+		if (invName.equals("ender_chest_contents")) {
+			// Hypixel sends every unlocked page (45 slots each). NEU cut the size after the last non-empty row, so a
+			// partly filled last page was drawn with fewer rows; keep the real page size instead.
+			jsonInvSize = Math.max(45, (int) Math.ceil(jsonInv.size() / 45f) * 45);
+		} else if (useActualMax(invName)) {
 			jsonInvSize = (int) Math.ceil(jsonInv.size() / 9f) * 9;
 		} else {
 			jsonInvSize = 9 * 4;

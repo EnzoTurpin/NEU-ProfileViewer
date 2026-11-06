@@ -55,6 +55,24 @@ public class RealDataGameTest implements FabricClientGameTest {
 				context.waitTicks(10);
 				context.takeScreenshot("real-inv-" + i);
 			}
+			// last ender chest page: open the ender chest and go to page 9 with the right arrow key
+			context.runOnClient(mc -> {
+				try {
+					java.lang.reflect.Field pagesField = ProfileViewerScreen.class.getDeclaredField("pages");
+					pagesField.setAccessible(true);
+					Object page = ((java.util.Map<?, ?>) pagesField.get(screen[0])).get(ProfileViewerScreen.Page.INVENTORIES);
+					java.lang.reflect.Field sel = page.getClass().getDeclaredField("selectedInventory");
+					sel.setAccessible(true);
+					sel.set(page, "ender_chest_contents");
+					java.lang.reflect.Field idx = page.getClass().getDeclaredField("currentInventoryIndex");
+					idx.setAccessible(true);
+					idx.set(page, 8);
+				} catch (ReflectiveOperationException e) {
+					throw new RuntimeException(e);
+				}
+			});
+			context.waitTicks(10);
+			context.takeScreenshot("real-ec-last-page");
 		}
 	}
 
