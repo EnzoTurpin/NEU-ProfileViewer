@@ -290,7 +290,7 @@ public class MuseumPage extends PvPage {
 	private void drawArrows(GuiGraphicsExtractor g, int mouseX, int mouseY) {
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
 		boolean leftHovered = false, rightHovered = false;
-		if (Minecraft.getInstance().mouseHandler.isLeftPressed()
+		if ((Minecraft.getInstance().mouseHandler.isLeftPressed() || Minecraft.getInstance().mouseHandler.isRightPressed())
 			&& mouseY > guiTop + PAGE_ARROWS_HEIGHT && mouseY < guiTop + PAGE_ARROWS_HEIGHT + 16
 			&& mouseX > guiLeft + 251 - 12 && mouseX < guiLeft + 251 + 12) {
 			if (mouseX < guiLeft + 251) leftHovered = true;

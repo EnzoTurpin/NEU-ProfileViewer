@@ -233,7 +233,7 @@ public class InventoriesPage extends PvPage {
 		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, x, y + inventoryRows * 18 + 17, 0, 215, 176, 7, 256, 256);
 
 		boolean leftHovered = false, rightHovered = false;
-		if (Minecraft.getInstance().mouseHandler.isLeftPressed()) {
+		if ((Minecraft.getInstance().mouseHandler.isLeftPressed() || Minecraft.getInstance().mouseHandler.isRightPressed())) {
 			if (mouseY > staticSelectorHeight && mouseY < staticSelectorHeight + 16 && mouseX > guiLeft + 320 - 12 && mouseX < guiLeft + 320 + 12) {
 				if (mouseX < guiLeft + 320) leftHovered = true;
 				else rightHovered = true;

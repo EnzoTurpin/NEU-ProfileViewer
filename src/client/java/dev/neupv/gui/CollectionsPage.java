@@ -76,7 +76,7 @@ public class CollectionsPage extends PvPage {
 	}
 
 	static boolean leftMouseDown() {
-		return Minecraft.getInstance().mouseHandler.isLeftPressed();
+		return (Minecraft.getInstance().mouseHandler.isLeftPressed() || Minecraft.getInstance().mouseHandler.isRightPressed());
 	}
 
 	static void playPressSound() {

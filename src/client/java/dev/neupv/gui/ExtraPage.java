@@ -16,8 +16,6 @@ import dev.neupv.pv.Weights;
 import dev.neupv.repo.NeuRepo;
 import dev.neupv.util.Fmt;
 import dev.neupv.util.J;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
-import net.fabricmc.fabric.api.event.Event;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
@@ -58,7 +56,6 @@ public class ExtraPage extends PvPage {
 	private boolean clickedLoadGuildInfoButton = false;
 	private String lastSearch = "";
 	private double pendingScroll = 0;
-	private Event<?> scrollEvent;
 
 	private final ExtraHoppityPage hoppityPage;
 
@@ -73,26 +70,19 @@ public class ExtraPage extends PvPage {
 		hoppityIcon = LegacyItems.skull("§7Hoppity", HOPPITY_SKULL_TEXTURE);
 	}
 
-	/**
-	 * NEU polled Mouse.getDWheel() in drawPage; PvPage has no scroll hook, so listen to the screen's Fabric scroll
-	 * event (re-registered when Fabric recreates the screen events on init/resize).
-	 */
-	private void hookScroll() {
-		Event<ScreenMouseEvents.AllowMouseScroll> ev = ScreenMouseEvents.allowMouseScroll(screen);
-		if (ev == scrollEvent) return;
-		scrollEvent = ev;
-		ev.register((s, mx, my, h, v) -> {
-			if (ProfileViewerScreen.currentPage != ProfileViewerScreen.Page.EXTRA || ProfileViewerScreen.isOnSecondPage()) return true;
-			float killDeathX = screen.guiLeft() + X_START + X_OFFSET * 3;
-			if (mx >= killDeathX && mx <= killDeathX + 76) {
-				int top = screen.guiTop();
-				if ((my >= top + Y_START_TOP && my <= top + Y_START_TOP + 65) || (my >= top + Y_START_BOTTOM && my <= top + Y_START_BOTTOM + 65)) {
-					pendingScroll += v;
-					return false;
-				}
+	/** NEU polled Mouse.getDWheel() in drawPage; here the screen forwards the wheel in PV coordinates. */
+	@Override
+	public boolean mouseScrolled(double mx, double my, double h, double v) {
+		if (ProfileViewerScreen.isOnSecondPage()) return false;
+		float killDeathX = screen.guiLeft() + X_START + X_OFFSET * 3;
+		if (mx >= killDeathX && mx <= killDeathX + 76) {
+			int top = screen.guiTop();
+			if ((my >= top + Y_START_TOP && my <= top + Y_START_TOP + 65) || (my >= top + Y_START_BOTTOM && my <= top + Y_START_BOTTOM + 65)) {
+				pendingScroll += v;
+				return true;
 			}
-			return true;
-		});
+		}
+		return false;
 	}
 
 	@Override
@@ -179,7 +169,6 @@ public class ExtraPage extends PvPage {
 	@Override
 	public void draw(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
 		initIcons();
-		hookScroll();
 
 		if (ProfileViewerScreen.isOnSecondPage()) {
 			// the screen shows page fields whenever their page is current: park the search box off-screen on the sub-page

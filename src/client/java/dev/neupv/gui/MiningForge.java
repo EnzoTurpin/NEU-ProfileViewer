@@ -65,7 +65,7 @@ public final class MiningForge {
 			"5: §7Locked", "6: §7Locked", "7: §7Locked"));
 		for (int i = 2; i < 7; i++) if (hotmLevel > i) forgeSlots.set(i, (i + 1) + ": §cEmpty");
 
-		JsonObject nodes = J.obj(member, "mining_core.nodes");
+		JsonObject nodes = dev.neupv.pv.SkillTree.hotmNodes(member);
 		int quickForge = 0;
 		if (nodes != null) quickForge = J.i(nodes, "quick_forge", J.i(nodes, "forge_time", 0));
 

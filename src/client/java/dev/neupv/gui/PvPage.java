@@ -41,6 +41,11 @@ public abstract class PvPage {
 		return false;
 	}
 
+	/** Mouse wheel, in PV coordinates. @return true if consumed */
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+		return false;
+	}
+
 	/** @return true if the key was consumed */
 	public boolean keyPressed(int keyCode) {
 		return false;

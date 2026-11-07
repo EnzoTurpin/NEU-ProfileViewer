@@ -195,10 +195,47 @@ public class ProfileViewerScreen extends Screen {
 		return profile.getUuidString();
 	}
 
+	/** Space the PV needs around its 431x202 panel: side buttons + gamemode icon (left), recent players (right), tabs (top), profile buttons (bottom). */
+	public static final int NEEDED_W = SIZE_X + 2 * 31, NEEDED_H = SIZE_Y + 2 * 30;
+	/** PV pixels -> screen GUI pixels. Below 1 when the panel does not fit at the current GUI scale. */
+	private float uiScale = 1f;
+	private int virtualWidth, virtualHeight;
+
+	/**
+	 * Responsive layout: the PV keeps NEU's fixed 431x202 layout, but is drawn at the largest INTEGER pixel scale that
+	 * fits the window (never larger than the player's GUI scale), so pixels stay crisp. E.g. GUI scale 4 on a
+	 * 1920x991 window renders the PV like GUI scale 3. Below 1 physical pixel per PV pixel it shrinks freely.
+	 * Mouse input is converted into the same coordinates; tooltips keep the normal GUI scale.
+	 */
+	private void updateLayout() {
+		var window = minecraft.getWindow();
+		double guiScale = window.getGuiScale();
+		int pw = window.getWidth(), ph = window.getHeight();
+		double fit = Math.min(pw / (double) NEEDED_W, ph / (double) NEEDED_H);
+		double physical = fit >= 1 ? Math.min(guiScale, Math.floor(fit)) : fit;
+		uiScale = (float) (physical / guiScale);
+		virtualWidth = Math.round(width / uiScale);
+		virtualHeight = Math.round(height / uiScale);
+		guiLeft = (virtualWidth - SIZE_X) / 2;
+		guiTop = (virtualHeight - SIZE_Y) / 2;
+	}
+
+	/** Physical pixels per PV pixel (used where NEU looked at the GUI scale). */
+	public double pixelScale() {
+		return uiScale * minecraft.getWindow().getGuiScale();
+	}
+
+	public float uiScale() {
+		return uiScale;
+	}
+
+	private MouseButtonEvent toVirtual(MouseButtonEvent e) {
+		return uiScale == 1f ? e : new MouseButtonEvent(e.x() / uiScale, e.y() / uiScale, e.buttonInfo());
+	}
+
 	@Override
 	protected void init() {
-		guiLeft = (width - SIZE_X) / 2;
-		guiTop = (height - SIZE_Y) / 2;
+		updateLayout();
 		for (Map<String, EditBox> m : pageFields.values()) m.values().forEach(this::addRenderableWidget);
 		String initial = searchBox != null ? searchBox.getValue() : Objects.requireNonNullElse(profile.getDisplayName(), "");
 		searchBox = new EditBox(font, guiLeft + SIZE_X - 100, guiTop + SIZE_Y + 5, 100, 20, Component.literal("Player"));
@@ -213,7 +250,11 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	@Override
-	public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
+	public void extractRenderState(GuiGraphicsExtractor g, int realMouseX, int realMouseY, float partialTicks) {
+		updateLayout();
+		int mouseX = (int) Math.floor(realMouseX / uiScale), mouseY = (int) Math.floor(realMouseY / uiScale);
+		g.pose().pushMatrix();
+		g.pose().scale(uiScale, uiScale);
 		currentTime = System.currentTimeMillis();
 		if (lastTime == 0) lastTime = currentTime;
 		profile.tickLoad();
@@ -251,9 +292,10 @@ public class ProfileViewerScreen extends Screen {
 		lastTime = currentTime;
 
 		super.extractRenderState(g, mouseX, mouseY, partialTicks);
+		g.pose().popMatrix();
 		collectChromeTooltips(mouseX, mouseY, loaded);
 		if (tooltipToDisplay != null) {
-			g.setComponentTooltipForNextFrame(font, tooltipToDisplay, mouseX, mouseY);
+			g.setComponentTooltipForNextFrame(font, tooltipToDisplay, realMouseX, realMouseY);
 			tooltipToDisplay = null;
 		}
 	}
@@ -428,9 +470,8 @@ public class ProfileViewerScreen extends Screen {
 		Draw.centeredMaxWidth(g, "Open in SkyCrypt", guiLeft + 156, y + 10, true, 90, 0xFF3FE0D0);
 
 		List<String> names = profile.getProfileNames();
-		int scale = guiScale();
-		if (profileDropdownSelected && !names.isEmpty() && scale < 4) {
-			int opt = scale == 3 ? 10 : 20;
+		int opt = dropdownOptionSize();
+		if (profileDropdownSelected && !names.isEmpty() && opt > 0) {
 			int h = names.size() * opt;
 			int top = guiTop + SIZE_Y + 23;
 			Draw.rect(g, PV_DROPDOWN, guiLeft, top - 3, 100, 3, 0.5f, 1, 0, 3 / 185f, 200, 185);
@@ -446,8 +487,13 @@ public class ProfileViewerScreen extends Screen {
 		}
 	}
 
-	private int guiScale() {
-		return (int) Math.round(minecraft.getWindow().getGuiScale());
+	/** Height of one profile in the dropdown (20 like NEU, 10 if that overflows the window), or 0 = cycle on click instead. */
+	private int dropdownOptionSize() {
+		int n = Math.max(1, profile.getProfileNames().size());
+		int room = virtualHeight - (guiTop + SIZE_Y + 23);
+		if (n * 20 <= room) return 20;
+		if (n * 10 <= room) return 10;
+		return 0;
 	}
 
 	private void collectChromeTooltips(int mouseX, int mouseY, boolean loaded) {
@@ -466,7 +512,8 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+	public boolean mouseClicked(MouseButtonEvent realEvent, boolean doubleClick) {
+		MouseButtonEvent event = toVirtual(realEvent);
 		double mx = event.x(), my = event.y();
 		int button = event.button();
 		boolean loaded = profile.getState() == SkyblockProfiles.State.LOADED;
@@ -509,9 +556,9 @@ public class ProfileViewerScreen extends Screen {
 		}
 		List<String> profNames = profile.getProfileNames();
 		if (loaded && !profNames.isEmpty() && mx > guiLeft && mx < guiLeft + 100) {
-			int scale = guiScale();
+			int opt = dropdownOptionSize();
 			if (my > guiTop + SIZE_Y + 3 && my < guiTop + SIZE_Y + 23) {
-				if (scale >= 4) {
+				if (opt == 0) {
 					int idx = Math.max(0, profNames.indexOf(profileName)) + (button == 0 ? 1 : -1);
 					if (idx >= profNames.size()) idx = 0;
 					if (idx < 0) idx = profNames.size() - 1;
@@ -520,8 +567,7 @@ public class ProfileViewerScreen extends Screen {
 					profileDropdownSelected = !profileDropdownSelected;
 				}
 				return true;
-			} else if (scale < 4 && profileDropdownSelected) {
-				int opt = scale == 3 ? 10 : 20;
+			} else if (opt > 0 && profileDropdownSelected) {
 				int idx = (int) ((my - (guiTop + SIZE_Y + 23)) / opt);
 				if (idx >= 0 && idx < profNames.size()) selectProfile(profNames.get(idx));
 				profileDropdownSelected = false;
@@ -538,10 +584,31 @@ public class ProfileViewerScreen extends Screen {
 	}
 
 	@Override
-	public boolean mouseReleased(MouseButtonEvent event) {
+	public boolean mouseReleased(MouseButtonEvent realEvent) {
+		MouseButtonEvent event = toVirtual(realEvent);
 		PvPage page = pages.get(currentPage);
 		if (page != null && page.wantsRealRelease()) page.mouseReleased(event.x(), event.y(), event.button());
 		return super.mouseReleased(event);
+	}
+
+	@Override
+	public boolean mouseDragged(MouseButtonEvent event, double dx, double dy) {
+		return super.mouseDragged(toVirtual(event), dx / uiScale, dy / uiScale);
+	}
+
+	@Override
+	public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+		double mx = mouseX / uiScale, my = mouseY / uiScale;
+		if (crashPage == null && profile.getState() == SkyblockProfiles.State.LOADED) {
+			PvPage page = pages.get(currentPage);
+			try {
+				if (page != null && page.mouseScrolled(mx, my, horizontal, vertical)) return true;
+			} catch (Exception e) {
+				crashPage = new CrashPage(this, e, currentPage.name());
+				return true;
+			}
+		}
+		return super.mouseScrolled(mx, my, horizontal, vertical);
 	}
 
 	@Override

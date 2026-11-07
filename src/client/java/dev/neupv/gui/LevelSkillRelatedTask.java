@@ -56,7 +56,7 @@ class LevelSkillRelatedTask extends LevelTask {
 		double glaciteExcess = Math.floor(4.25 * (Math.sqrt(1 + 8 * Math.sqrt((1758267.0 / 20_000_000.0) * glaciteOver + 9)) - 3));
 		double sbXpHotmTier = (mithrilXP + mithrilExcess) + (gemstoneXP + gemstoneExcess) + (glaciteXP + glaciteExcess) + hotmXP;
 
-		int potm = J.i(object, "mining_core.nodes.special_0", 0);
+		int potm = dev.neupv.pv.SkillTree.peakOfTheMountain(object);
 		int sbXpPotmTier = sumFirst(miningObj.getAsJsonArray("potm_xp"), potm);
 
 		int sbXpCommissionMilestone = 0;

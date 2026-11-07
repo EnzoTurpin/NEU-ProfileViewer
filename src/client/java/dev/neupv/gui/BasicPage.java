@@ -331,7 +331,14 @@ public class BasicPage extends PvPage {
 		}
 		int x = screen.guiLeft() + 63, y = screen.guiTop() + 135;
 		// The entity is centred in this box and clipped to it: keep the centre (y - 33) but leave room above the head.
-		InventoryScreen.extractEntityInInventoryFollowsMouse(g, x - 40, y - 93, x + 40, y + 27, 36, 0.0625f, mouseX, mouseY, entityPlayer);
+		// The 3D model is rendered "picture in picture", which ignores the GUI pose: when the PV is scaled down
+		// (see ProfileViewerScreen.updateLayout) its box, size and mouse position must be converted by hand.
+		float s = screen.uiScale();
+		g.pose().pushMatrix();
+		g.pose().identity();
+		InventoryScreen.extractEntityInInventoryFollowsMouse(g, Math.round((x - 40) * s), Math.round((y - 93) * s), Math.round((x + 40) * s),
+			Math.round((y + 27) * s), Math.round(36 * s), 0.0625f, mouseX * s, mouseY * s, entityPlayer);
+		g.pose().popMatrix();
 	}
 
 	private void drawActivePet(GuiGraphicsExtractor g, SkyblockProfiles.SkyblockProfile selected) {
