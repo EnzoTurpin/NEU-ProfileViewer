@@ -49,8 +49,30 @@ public class GardenPage extends PvPage {
 
 	private int mouseX, mouseY;
 
+	private final GardenContestsPage contestsPage;
+	private ItemStack gardenIcon, contestsIcon;
+
 	public GardenPage(ProfileViewerScreen screen) {
 		super(screen);
+		contestsPage = new GardenContestsPage(screen);
+	}
+
+	/** Second side-button page (Jacob's contests, greenhouse, toolkit). */
+	public GardenContestsPage contestsPage() {
+		return contestsPage;
+	}
+
+	@Override
+	public boolean hasSideButtons() {
+		return true;
+	}
+
+	private void drawSideButtons(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+		if (gardenIcon == null) {
+			gardenIcon = LegacyItems.icon(Items.GRASS_BLOCK, "§7Garden");
+			contestsIcon = LegacyItems.icon(Items.GOLDEN_HOE, "§7Contests");
+		}
+		PvWidgets.sideButtons(screen, g, gardenIcon, contestsIcon, mouseX, mouseY);
 	}
 
 	@Override
@@ -58,6 +80,11 @@ public class GardenPage extends PvPage {
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
 		this.mouseX = mouseX;
 		this.mouseY = mouseY;
+		drawSideButtons(g, mouseX, mouseY);
+		if (ProfileViewerScreen.isOnSecondPage()) {
+			contestsPage.draw(g, mouseX, mouseY, partialTicks);
+			return;
+		}
 		SkyblockProfiles.SkyblockProfile selected = getSelectedProfile();
 		if (selected == null) return;
 
@@ -382,6 +409,19 @@ public class GardenPage extends PvPage {
 
 	@Override
 	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		switch (PvWidgets.sideButtonClicked(screen, mouseX, mouseY)) {
+			case 1 -> {
+				ProfileViewerScreen.setOnSecondPage(false);
+				return true;
+			}
+			case 2 -> {
+				ProfileViewerScreen.setOnSecondPage(true);
+				return true;
+			}
+			default -> {
+			}
+		}
+		if (ProfileViewerScreen.isOnSecondPage()) return contestsPage.mouseClicked(mouseX, mouseY, button);
 		int guiLeft = screen.guiLeft(), guiTop = screen.guiTop();
 		if ((button == 0 || button == 1) && mouseX >= guiLeft + 190 && mouseX <= guiLeft + 290 && mouseY >= guiTop + 51 && mouseY <= guiTop + 60) {
 			if (eliteData == null) return false;
@@ -402,5 +442,6 @@ public class GardenPage extends PvPage {
 		eliteData = null;
 		parsedElite = null;
 		visitorStats = null;
+		contestsPage.resetCache();
 	}
 }

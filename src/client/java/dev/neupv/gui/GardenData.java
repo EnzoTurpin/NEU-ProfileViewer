@@ -35,7 +35,7 @@ public final class GardenData {
 		CACTUS("ENCHANTED_CACTUS_GREEN", "CACTUS", "Cactus"),
 		MUSHROOM("ENCHANTED_BROWN_MUSHROOM", "MUSHROOM_COLLECTION", "Mushroom"),
 		// 2025 crops: in the repo/Elitebot data, not in NEU 2.6.0's enum (and not in its 2x5 grid)
-		SUNFLOWER("SUNFLOWER", "DOUBLE_PLANT", "Sunflower"),
+		SUNFLOWER("ENCHANTED_SUNFLOWER", "DOUBLE_PLANT", "Sunflower"),
 		MOONFLOWER("MOONFLOWER", "MOONFLOWER", "Moonflower"),
 		WILD_ROSE("WILD_ROSE", "WILD_ROSE", "Wild Rose");
 

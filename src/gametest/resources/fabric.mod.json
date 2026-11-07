@@ -13,6 +13,7 @@
 			"dev.neupv.test.DungeonGameTest",
 			"dev.neupv.test.ExtraGameTest",
 			"dev.neupv.test.ForestGameTest",
+			"dev.neupv.test.GardenContestsGameTest",
 			"dev.neupv.test.GardenGameTest",
 			"dev.neupv.test.HuntingGameTest",
 			"dev.neupv.test.InventoriesGameTest",
