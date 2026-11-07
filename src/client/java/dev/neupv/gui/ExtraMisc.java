@@ -24,74 +24,73 @@ final class ExtraMisc {
 
 	private record Line(String left, String right, List<String> tooltip) {}
 
-	/** Draws the misc lines in the box whose top-left text position is (x, y); same squeeze as the essence box. */
+	/**
+	 * Draws the misc lines in the box whose top-left text position is (x, y), like NEU's other Profile Stats boxes:
+	 * 6 lines 10px apart, full-size text (Draw.aligned shrinks a line only when it is too wide).
+	 */
 	static void draw(ProfileViewerScreen screen, GuiGraphicsExtractor g, JsonObject member, float x, float y, int mouseX, int mouseY) {
 		List<Line> lines = lines(member);
-		float spacing = Math.min(9, 72f / Math.max(1, lines.size()));
-		float scale = Math.min(1f, spacing / 9f);
 		for (int i = 0; i < lines.size(); i++) {
 			Line line = lines.get(i);
-			float ly = y + spacing * i;
-			g.pose().pushMatrix();
-			g.pose().translate(x, ly);
-			g.pose().scale(scale, scale);
-			Draw.aligned(g, line.left(), line.right(), 0, 0, Math.round(76 / scale));
-			g.pose().popMatrix();
-			if (line.tooltip() != null && mouseX >= x && mouseX <= x + 76 && mouseY >= ly && mouseY < ly + spacing) {
+			float ly = y + 10 * i;
+			Draw.aligned(g, line.left(), line.right(), x, ly, 76);
+			if (line.tooltip() != null && mouseX >= x && mouseX <= x + 76 && mouseY >= ly && mouseY < ly + 10) {
 				screen.tooltipToDisplay = PvWidgets.lines(line.tooltip().toArray(new String[0]));
 			}
 		}
 	}
+
+	/** One label colour for the whole box, like NEU's boxes (Auctions all §5, Ores/Fishing all §a...). */
+	private static final String LABEL = "§b";
 
 	private static List<Line> lines(JsonObject member) {
 		List<Line> lines = new ArrayList<>();
 		String ps = "player_stats.";
 
 		double dmg = J.dbl(member, ps + "highest_damage", 0), crit = J.dbl(member, ps + "highest_critical_damage", 0);
-		lines.add(new Line("§cHighest Damage", "§f" + Fmt.shortNumber(Math.max(dmg, crit)), List.of(
-			"§cHighest Damage",
+		lines.add(new Line(LABEL + "Highest Damage", "§f" + Fmt.shortNumber(Math.max(dmg, crit)), List.of(
+			LABEL + "Highest Damage",
 			"§7Non-critical: §f" + Fmt.number(dmg),
-			"§7Critical: §f" + Fmt.number(crit))));
-
-		double sc = J.dbl(member, ps + "sea_creature_kills", 0);
-		lines.add(new Line("§3Sea Creature Kills", "§f" + Fmt.shortNumber(sc), List.of(
-			"§3Sea Creature Kills: §f" + Fmt.number(sc),
-			"§7From the profile stats (the line above",
-			"§7counts the pet milestone instead).")));
+			"§7Critical: §f" + Fmt.number(crit),
+			"",
+			"§7Sea Creature Kills: §f" + Fmt.number(J.dbl(member, ps + "sea_creature_kills", 0)))));
 
 		double given = J.dbl(member, ps + "gifts.total_given", 0), received = J.dbl(member, ps + "gifts.total_received", 0);
-		lines.add(new Line("§bGifts Given", "§f" + Fmt.shortNumber(given), null));
-		lines.add(new Line("§bGifts Received", "§f" + Fmt.shortNumber(received), null));
+		lines.add(new Line(LABEL + "Gifts", "§f" + Fmt.shortNumber(given) + "/" + Fmt.shortNumber(received), List.of(
+			LABEL + "Gifts",
+			"§7Given: §f" + Fmt.number(given),
+			"§7Received: §f" + Fmt.number(received))));
 
 		lines.add(candy(J.objOrEmpty(member, ps + "candy_collected")));
 		lines.add(races(J.objOrEmpty(member, ps + "races")));
 
 		JsonObject glacite = J.objOrEmpty(member, "glacite_player_data");
 		List<String> dustTip = new ArrayList<>();
-		dustTip.add("§dFossil Dust: §f" + Fmt.number(J.dbl(glacite, "fossil_dust", 0)));
+		dustTip.add(LABEL + "Fossil Dust: §f" + Fmt.number(J.dbl(glacite, "fossil_dust", 0)));
 		JsonArray donated = J.arrOrEmpty(glacite, "fossils_donated");
 		dustTip.add("§7Fossils donated: §f" + donated.size());
 		for (JsonElement e : donated) dustTip.add("§8 - §7" + nice(e.getAsString()));
-		lines.add(new Line("§dFossil Dust", "§f" + Fmt.shortNumber(J.dbl(glacite, "fossil_dust", 0)), dustTip));
+		lines.add(new Line(LABEL + "Fossil Dust", "§f" + Fmt.shortNumber(J.dbl(glacite, "fossil_dust", 0)), dustTip));
 
 		JsonObject corpses = J.objOrEmpty(glacite, "corpses_looted");
 		long totalCorpses = 0;
 		List<String> corpseTip = new ArrayList<>();
-		corpseTip.add("§bCorpses Looted");
+		corpseTip.add(LABEL + "Corpses Looted");
 		for (Map.Entry<String, JsonElement> e : corpses.entrySet()) {
 			long n = e.getValue().getAsLong();
 			totalCorpses += n;
 			corpseTip.add(corpseColour(e.getKey()) + nice(e.getKey()) + "§7: §f" + Fmt.number(n));
 		}
-		lines.add(new Line("§bCorpses Looted", "§f" + Fmt.shortNumber(totalCorpses), corpseTip));
-		lines.add(new Line("§bMineshafts", "§f" + Fmt.shortNumber(J.dbl(glacite, "mineshafts_entered", 0)), null));
+		corpseTip.add("");
+		corpseTip.add("§7Mineshafts entered: §f" + Fmt.number(J.dbl(glacite, "mineshafts_entered", 0)));
+		lines.add(new Line(LABEL + "Corpses Looted", "§f" + Fmt.shortNumber(totalCorpses), corpseTip));
 		return lines;
 	}
 
 	private static Line candy(JsonObject candy) {
 		long total = J.lng(candy, "total", 0);
 		List<String> tip = new ArrayList<>();
-		tip.add("§6Candy Collected: §f" + Fmt.number(total));
+		tip.add(LABEL + "Candy Collected: §f" + Fmt.number(total));
 		tip.add("§aGreen Candy: §f" + Fmt.number(J.lng(candy, "green_candy", 0)));
 		tip.add("§5Purple Candy: §f" + Fmt.number(J.lng(candy, "purple_candy", 0)));
 		int festivals = 0;
@@ -106,12 +105,12 @@ final class ExtraMisc {
 			tip.add("§7Spooky Festivals: §f" + festivals);
 			tip.add("§7Best festival: §f" + Fmt.number(best));
 		}
-		return new Line("§6Candy Collected", "§f" + Fmt.shortNumber(total), tip);
+		return new Line(LABEL + "Candy Collected", "§f" + Fmt.shortNumber(total), tip);
 	}
 
 	private static Line races(JsonObject races) {
 		List<String> tip = new ArrayList<>();
-		tip.add("§eRace Best Times");
+		tip.add(LABEL + "Race Best Times");
 		int count = 0;
 		for (Map.Entry<String, JsonElement> e : races.entrySet()) {
 			if (e.getValue().isJsonPrimitive()) {
@@ -135,7 +134,7 @@ final class ExtraMisc {
 				tip.add("§8 - §7" + nice(e.getKey()) + ": §f" + raceTime(e.getValue()));
 			}
 		}
-		return new Line("§eRace Best Times", "§f" + count, tip);
+		return new Line(LABEL + "Race Best Times", "§f" + count, tip);
 	}
 
 	private static String raceTime(long ms) {
