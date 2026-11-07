@@ -80,7 +80,10 @@ public class MiningPage extends PvPage {
 		int x = guiLeft + 23, y = guiTop + 25, sectionWidth = 110;
 
 		double mithril = J.dbl(core, "powder_mithril", 0), gemstone = J.dbl(core, "powder_gemstone", 0), glacite = J.dbl(core, "powder_glacite", 0);
-		double mithrilSpent = J.dbl(core, "powder_spent_mithril", 0), gemstoneSpent = J.dbl(core, "powder_spent_gemstone", 0), glaciteSpent = J.dbl(core, "powder_spent_glacite", 0);
+		// powder spent is stored per HOTM tree (powder_spent_mithril, _2 ... _5): use the selected tree
+		String slot = dev.neupv.pv.SkillTree.hotmSlotSuffix(member);
+		double mithrilSpent = J.dbl(core, "powder_spent_mithril" + slot, 0), gemstoneSpent = J.dbl(core, "powder_spent_gemstone" + slot, 0),
+			glaciteSpent = J.dbl(core, "powder_spent_glacite" + slot, 0);
 
 		double nucleusRuns = Double.MAX_VALUE;
 		for (String crystal : List.of("amber", "amethyst", "jade", "sapphire", "topaz")) {

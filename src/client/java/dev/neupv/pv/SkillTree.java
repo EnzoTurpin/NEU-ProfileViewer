@@ -25,6 +25,12 @@ public final class SkillTree {
 		return n <= 1 ? "mining" : "mining_" + n;
 	}
 
+	/** Suffix of per-tree keys for the selected HOTM tree: "" for tree 1, "_2" for tree 2, ... (e.g. powder_spent_mithril_2). */
+	public static String hotmSlotSuffix(JsonObject member) {
+		int n = J.i(member, "skill_tree.selected_skill_tree_slot.mining", 1);
+		return n <= 1 ? "" : "_" + n;
+	}
+
 	public static double hotmExperience(JsonObject member) {
 		if (J.get(member, "skill_tree.experience.mining") != null) return J.dbl(member, "skill_tree.experience.mining", 0);
 		return J.dbl(member, "mining_core.experience", 0);
