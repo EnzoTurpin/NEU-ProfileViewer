@@ -14,6 +14,7 @@
 			"dev.neupv.test.ExtraGameTest",
 			"dev.neupv.test.ForestGameTest",
 			"dev.neupv.test.GardenGameTest",
+			"dev.neupv.test.HuntingGameTest",
 			"dev.neupv.test.InventoriesGameTest",
 			"dev.neupv.test.LevelGameTest",
 			"dev.neupv.test.MiningGameTest",
