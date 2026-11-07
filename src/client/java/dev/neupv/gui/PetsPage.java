@@ -108,6 +108,13 @@ public class PetsPage extends PvPage {
 		}
 
 		if (selectedPet >= 0 && selectedPet < sortedPets.size()) drawSelectedPet(g, sortedPets.get(selectedPet), guiLeft, guiTop);
+
+		// Autopet (not in NEU): free spot of the right panel, between the level bars and the XP lines
+		int autopetRules = PetsAutopet.rules(selected.getProfileJson()).size();
+		Draw.aligned(g, "§eAutopet", "§f" + autopetRules + (autopetRules == 1 ? " rule" : " rules"), guiLeft + 319, guiTop + 104, 98);
+		if (mouseX >= guiLeft + 319 && mouseX <= guiLeft + 417 && mouseY >= guiTop + 104 && mouseY < guiTop + 113) {
+			screen.tooltipToDisplay = PetsAutopet.tooltip(selected.getProfileJson());
+		}
 	}
 
 	private void drawSelectedPet(GuiGraphicsExtractor g, PetsData.PetDisplay pet, int guiLeft, int guiTop) {

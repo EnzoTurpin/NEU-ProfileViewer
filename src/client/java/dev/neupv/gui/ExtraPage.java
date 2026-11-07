@@ -198,6 +198,9 @@ public class ExtraPage extends PvPage {
 
 		Draw.aligned(g, "§6Bank", "§f" + Fmt.shortNumber(bankBalance) + "/" + Fmt.shortNumber(personalBankBalance),
 			guiLeft + X_START, guiTop + Y_START_TOP, 76);
+		if (mouseX >= guiLeft + X_START && mouseX <= guiLeft + X_START + 76 && mouseY >= guiTop + Y_START_TOP && mouseY < guiTop + Y_START_TOP + 9) {
+			screen.tooltipToDisplay = ExtraMisc.bankTooltip(selectedProfile.getOuterProfileJson(), bankBalance, personalBankBalance);
+		}
 		Draw.aligned(g, "§6Purse", "§f" + Fmt.shortNumber(purseBalance), guiLeft + X_START, guiTop + Y_START_TOP + Y_OFFSET, 76);
 
 		JsonElement firstJoin = J.get(profileInfo, "profile.first_join");
@@ -269,6 +272,9 @@ public class ExtraPage extends PvPage {
 		Draw.aligned(g, "§aItems Fished", "§f" + (long) J.dbl(profileInfo, "player_stats.items_fished.total", 0), col3, guiTop + Y_START_TOP + Y_OFFSET * 3, 76);
 		Draw.aligned(g, "§aTreasures Fished", "§f" + (long) J.dbl(profileInfo, "player_stats.items_fished.treasure", 0), col3, guiTop + Y_START_TOP + Y_OFFSET * 4, 76);
 		Draw.aligned(g, "§aLarge Treasures", "§f" + (long) J.dbl(profileInfo, "player_stats.items_fished.large_treasure", 0), col3, guiTop + Y_START_TOP + Y_OFFSET * 5, 76);
+
+		// Bottom box of the 3rd column: empty in NEU, filled with misc stats here
+		ExtraMisc.draw(screen, g, profileInfo, col3, guiTop + Y_START_BOTTOM, mouseX, mouseY);
 
 		drawEssence(g, profileInfo, mouseX, mouseY);
 		drawKillsDeaths(g, profileInfo, mouseX, mouseY);

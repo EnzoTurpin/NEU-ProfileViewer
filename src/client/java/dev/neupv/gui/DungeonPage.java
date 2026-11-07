@@ -177,6 +177,9 @@ public class DungeonPage extends PvPage {
 			int miscTopY = y + 55;
 			Draw.aligned(g, "§eTotal Runs " + prefix, "§f" + (int) (onMasterMode ? totalRunsM : totalRunsF), x, miscTopY, SECTION_WIDTH);
 			Draw.aligned(g, "§eTotal Runs (" + prefix + "5-7)  ", "§f" + (int) (onMasterMode ? totalRunsM5 : totalRunsF5), x, miscTopY + 10, SECTION_WIDTH);
+			if (mouseX >= x && mouseX <= x + SECTION_WIDTH && mouseY >= miscTopY && mouseY < miscTopY + 18) {
+				screen.tooltipToDisplay = DungeonRunsTooltip.build(profileInfo);
+			}
 			Draw.aligned(g, "§eSecrets (Total)  ", "§f" + Fmt.shortNumber(secrets), x, miscTopY + 20, SECTION_WIDTH);
 			Draw.aligned(g, "§eSecrets (/Run)  ", "§f" + (Math.round(secrets / Math.max(1, totalRuns) * 100) / 100f), x, miscTopY + 30, SECTION_WIDTH);
 			Draw.aligned(g, "§eMob Kills (Total)  ", "§f" + Fmt.shortNumber(mobKills), x, miscTopY + 40, SECTION_WIDTH);
