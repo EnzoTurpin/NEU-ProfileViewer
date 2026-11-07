@@ -43,16 +43,23 @@ public class MiningPage extends PvPage {
 		CRYSTAL_TO_COLOR.put("citrine", "§4");
 	}
 
-	private static ItemStack hotmSkillIcon, anvil;
+	private static ItemStack hotmSkillIcon, anvil, mountainButtonIcon, forestButtonIcon;
 	private final MiningHotmTree tree = new MiningHotmTree();
+	private final MiningForestPage forestPage;
 	private int treeLeft, treeTop, treeRight, treeBottom;
 
 	public MiningPage(ProfileViewerScreen screen) {
 		super(screen);
+		forestPage = new MiningForestPage(screen);
 	}
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
+		if (ProfileViewerScreen.isOnSecondPage()) {
+			if (!forestPage.overTree(mouseX, mouseY)) return false;
+			forestPage.tree.scroll += (int) Math.round(vertical * 24);
+			return true;
+		}
 		if (treeLeft < mouseX && mouseX < treeRight && treeTop < mouseY && mouseY < treeBottom) {
 			// NEU adds Mouse.getDWheel() (±120 per notch); one tree row per notch is easier to use.
 			tree.scroll += (int) Math.round(vertical * 24);
@@ -61,8 +68,46 @@ public class MiningPage extends PvPage {
 		return false;
 	}
 
+	/** Side buttons: 1 = Heart of the Mountain, 2 = Heart of the Forest (not in NEU). */
+	@Override
+	public boolean hasSideButtons() {
+		return true;
+	}
+
+	@Override
+	public boolean mouseClicked(double mouseX, double mouseY, int button) {
+		switch (PvWidgets.sideButtonClicked(screen, mouseX, mouseY)) {
+			case 1 -> {
+				ProfileViewerScreen.setOnSecondPage(false);
+				return true;
+			}
+			case 2 -> {
+				ProfileViewerScreen.setOnSecondPage(true);
+				return true;
+			}
+			default -> {
+				return false;
+			}
+		}
+	}
+
 	@Override
 	public void draw(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTicks) {
+		if (mountainButtonIcon == null) {
+			mountainButtonIcon = LegacyItems.rename(new ItemStack(Items.IRON_PICKAXE), "§5Heart of the Mountain");
+			forestButtonIcon = MiningForestPage.sideButtonIcon();
+		}
+		if (ProfileViewerScreen.isOnSecondPage()) forestPage.draw(g, mouseX, mouseY);
+		else drawMountain(g, mouseX, mouseY);
+		PvWidgets.sideButtons(screen, g, mountainButtonIcon, forestButtonIcon, mouseX, mouseY);
+	}
+
+	/** Number of HOTF perks evaluated for the last drawn tree (tests). */
+	public int forestPerksRendered() {
+		return forestPage.tree.renderedPerks();
+	}
+
+	private void drawMountain(GuiGraphicsExtractor g, int mouseX, int mouseY) {
 		if (hotmSkillIcon == null) {
 			hotmSkillIcon = new ItemStack(Items.IRON_PICKAXE);
 			anvil = new ItemStack(Items.ANVIL);
@@ -199,5 +244,6 @@ public class MiningPage extends PvPage {
 	@Override
 	public void resetCache() {
 		tree.resetCache();
+		forestPage.resetCache();
 	}
 }

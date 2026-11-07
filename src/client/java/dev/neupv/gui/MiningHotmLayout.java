@@ -28,29 +28,32 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * The HOTM tree described by NEU-REPO {@code constants/hotmlayout.json}: perk positions, and lore/cost/item computed by
- * nealisp programs. Pure logic (no rendering), so it can be tested outside of Minecraft.
+ * A Heart of the Mountain / Heart of the Forest tree described by NEU-REPO {@code constants/hotmlayout.json} or
+ * {@code constants/hotflayout.json} (same format): perk positions, and lore/cost/item computed by nealisp programs. Pure logic (no rendering), so it can be tested outside of Minecraft.
  */
 public final class MiningHotmLayout {
 	private static final Pattern PLACEHOLDER = Pattern.compile("\\{([a-z\\-A-Z_0-9]+)\\}");
-	private static final Set<String> FIXED_KEYS = Set.of("name", "x", "y", "maxLevel", "powder", "cost", "lore");
+	private static final Set<String> FIXED_KEYS = Set.of("name", "x", "y", "maxLevel", "powder", "cost", "lore", "isAbility");
 
 	public record LoreLine(String text, LispAst.Program condition) {}
 
 	public static final class Perk {
 		public final String key, name;
 		public final int x, y, maxLevel;
+		/** Axe/pickaxe ability (hotflayout "isAbility"; hotmlayout has no flag). */
+		public final boolean isAbility;
 		final LispAst.Program powder;
 		final List<LoreLine> lore;
 		final Map<String, LispAst.Program> compiledFunctions = new LinkedHashMap<>();
 
-		Perk(String key, JsonObject json) {
+		Perk(String file, String key, JsonObject json) {
 			this.key = key;
+			this.isAbility = json.has("isAbility") && json.get("isAbility").getAsBoolean();
 			this.name = json.get("name").getAsString();
 			this.x = json.get("x").getAsInt();
 			this.y = json.get("y").getAsInt();
 			this.maxLevel = json.get("maxLevel").getAsInt();
-			this.powder = parse("hotmlayout.json:perk:" + name + ":powder", json.get("powder").getAsString());
+			this.powder = parse(file + ":perk:" + name + ":powder", json.get("powder").getAsString());
 			this.lore = new ArrayList<>();
 			for (JsonElement e : json.getAsJsonArray("lore")) {
 				if (e.isJsonObject()) {
@@ -62,9 +65,9 @@ public final class MiningHotmLayout {
 			}
 			for (Map.Entry<String, JsonElement> extra : json.entrySet()) {
 				if (FIXED_KEYS.contains(extra.getKey())) continue;
-				compiledFunctions.put(extra.getKey(), parse("hotmlayout.json:perk:" + name + ":" + extra.getKey(), extra.getValue().getAsString()));
+				compiledFunctions.put(extra.getKey(), parse(file + ":perk:" + name + ":" + extra.getKey(), extra.getValue().getAsString()));
 			}
-			compiledFunctions.put("cost", parse("hotmlayout.json:perk:" + name + ":cost", json.get("cost").getAsString()));
+			compiledFunctions.put("cost", parse(file + ":perk:" + name + ":cost", json.get("cost").getAsString()));
 		}
 	}
 
@@ -79,13 +82,19 @@ public final class MiningHotmLayout {
 
 	/** @param file the whole hotmlayout.json ({prelude: [...], hotm: {perks, powders}}) */
 	public MiningHotmLayout(JsonObject file) {
-		JsonObject hotm = file.getAsJsonObject("hotm");
+		this(file, "hotm");
+	}
+
+	/** @param root "hotm" for hotmlayout.json, "hotf" for hotflayout.json */
+	public MiningHotmLayout(JsonObject file, String root) {
+		String fileName = root + "layout.json";
+		JsonObject hotm = file.getAsJsonObject(root);
 		for (Map.Entry<String, JsonElement> e : hotm.getAsJsonObject("powders").entrySet()) {
 			powderCostLines.put(e.getKey(), e.getValue().getAsJsonObject().get("costLine").getAsString());
 		}
 		int maxX = 0, maxY = 0;
 		for (Map.Entry<String, JsonElement> e : hotm.getAsJsonObject("perks").entrySet()) {
-			Perk p = new Perk(e.getKey(), e.getValue().getAsJsonObject());
+			Perk p = new Perk(fileName, e.getKey(), e.getValue().getAsJsonObject());
 			perks.put(e.getKey(), p);
 			gridNodes.add(gridKey(p.x, p.y));
 			maxX = Math.max(maxX, p.x);
@@ -99,7 +108,7 @@ public final class MiningHotmLayout {
 		JsonArray prelude = file.getAsJsonArray("prelude");
 		if (prelude != null) {
 			for (int i = 0; i < prelude.size(); i++) {
-				lec.executeProgram(lec.getRootStackFrame(), parse("hotmlayout.json:prelude[" + i + "]", prelude.get(i).getAsString()));
+				lec.executeProgram(lec.getRootStackFrame(), parse(fileName + ":prelude[" + i + "]", prelude.get(i).getAsString()));
 			}
 		}
 	}
@@ -122,12 +131,16 @@ public final class MiningHotmLayout {
 		return e.getAsInt();
 	}
 
-	/** NEU HotmTreeRenderer.calculatePerkProperties + createPerkTooltip + getPerkItem. */
+	/**
+	 * NEU HotmTreeRenderer.calculatePerkProperties + createPerkTooltip + getPerkItem.
+	 * hotmLevel is the tree's level (HOTM or HOTF), bound as both "hotm" and "hotf".
+	 */
 	public PerkState evaluate(Perk perk, Map<String, JsonElement> levels, double hotmLevel) {
 		int level = levelOf(levels, perk.key);
 		StackFrame bindings = lec.genBindings();
 		bindings.setValueLocal("potm", new LispData.LispNumber(levelOf(levels, "special_0")));
 		bindings.setValueLocal("hotm", new LispData.LispNumber(hotmLevel));
+		bindings.setValueLocal("hotf", new LispData.LispNumber(hotmLevel));
 		bindings.setValueLocal("other-perk-level", LispData.Companion.externalCall("other-perk-level", (args, errorReporter) -> {
 			if (args.size() != 1 || !(args.get(0) instanceof LispData.LispString s)) {
 				return errorReporter.invoke("Need exactly one perk name to look up");
@@ -166,7 +179,8 @@ public final class MiningHotmLayout {
 			}
 			lines.add(line.text());
 		}
-		if (level != 0 && level != perk.maxLevel) {
+		// hotflayout.json leaves "cost" empty when the cost is unknown: no cost line rather than <lisp-error>
+		if (level != 0 && level != perk.maxLevel && values.get("cost") instanceof LispData.LispNumber) {
 			lines.add("");
 			StackFrame powderFrame = bindings.fork();
 			for (String powder : powderCostLines.keySet()) powderFrame.setValueLocal(powder, new LispData.LispString(powder));

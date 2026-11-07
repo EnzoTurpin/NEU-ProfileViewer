@@ -53,4 +53,47 @@ public final class SkillTree {
 		JsonObject nodes = hotmNodes(member);
 		return J.i(nodes, "core_of_the_mountain", J.i(nodes, "special_0", 0));
 	}
+
+	// ---- Heart of the Forest (Galatea, 2025): only exists in the skill_tree layout ----
+
+	/** Selected HOTF loadout, 1-based (skill_tree.selected_skill_tree_slot.foraging). */
+	public static int hotfSlotNumber(JsonObject member) {
+		return Math.max(1, J.i(member, "skill_tree.selected_skill_tree_slot.foraging", 1));
+	}
+
+	/** Key of a per-tree entry: base for tree 1, base_N for tree N ("foraging", "foraging_2", "forest_3"...). */
+	public static String hotfKey(String base, int slot) {
+		return slot <= 1 ? base : base + "_" + slot;
+	}
+
+	public static double hotfExperience(JsonObject member) {
+		return J.dbl(member, "skill_tree.experience.foraging", 0);
+	}
+
+	/** HOTF level from leveling.json "HOTF" (per-level xp, like HOTM) capped by leveling_caps.HOTF. */
+	public static Level hotfLevel(JsonObject member, JsonObject leveling) {
+		return Level.of(J.arr(leveling, "HOTF"), (float) hotfExperience(member), Level.cap(leveling, "HOTF"), false);
+	}
+
+	public static JsonObject hotfNodes(JsonObject member) {
+		JsonObject nodes = J.obj(member, "skill_tree.nodes." + hotfKey("foraging", hotfSlotNumber(member)));
+		if (nodes == null) nodes = J.obj(member, "skill_tree.nodes.foraging");
+		return nodes == null ? new JsonObject() : nodes;
+	}
+
+	public static String hotfSelectedAbility(JsonObject member) {
+		return J.str(member, "skill_tree.selected_ability." + hotfKey("foraging", hotfSlotNumber(member)), null);
+	}
+
+	/** Tokens of the Forest spent in a tree (skill_tree.tokens_spent.forest, forest_2...). */
+	public static int hotfTokensSpent(JsonObject member, int slot) {
+		return J.i(member, "skill_tree.tokens_spent." + hotfKey("forest", slot), 0);
+	}
+
+	/** Number of HOTF loadouts the profile has (nodes.foraging_N present), at least 1. */
+	public static int hotfTreeCount(JsonObject member) {
+		int n = 1;
+		while (J.obj(member, "skill_tree.nodes.foraging_" + (n + 1)) != null) n++;
+		return n;
+	}
 }

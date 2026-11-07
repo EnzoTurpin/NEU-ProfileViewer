@@ -11,6 +11,7 @@
 			"dev.neupv.test.CrimsonRiftGameTest",
 			"dev.neupv.test.DungeonGameTest",
 			"dev.neupv.test.ExtraGameTest",
+			"dev.neupv.test.ForestGameTest",
 			"dev.neupv.test.GardenGameTest",
 			"dev.neupv.test.InventoriesGameTest",
 			"dev.neupv.test.LevelGameTest",

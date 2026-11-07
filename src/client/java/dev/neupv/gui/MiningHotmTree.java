@@ -12,6 +12,7 @@ import dev.neupv.item.LegacyItems;
 import dev.neupv.item.PvItem;
 import dev.neupv.repo.NeuRepo;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
@@ -21,42 +22,67 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
-/** Renders the HOTM perk tree (scrollable, with tooltips) from NEU-REPO constants/hotmlayout.json. */
+/**
+ * Renders a perk tree (scrollable, with tooltips) from NEU-REPO constants/hotmlayout.json (Heart of the Mountain) or
+ * constants/hotflayout.json (Heart of the Forest, same format, not in NEU).
+ */
 public final class MiningHotmTree {
 	private static final Identifier PERK_BACKGROUND = Draw.tex("gui/mining/perk_background.png");
 	private static final Identifier PERK_CONNECTION_X = Draw.tex("gui/mining/perk_connection_x.png");
 	private static final Identifier PERK_CONNECTION_Y = Draw.tex("gui/mining/perk_connection_y.png");
 
-	private static JsonObject layoutSource;
-	private static MiningHotmLayout layout;
-	private static boolean layoutFailed;
+	/** Parsed layout per repo constant, rebuilt when the constant changes. */
+	private static final class LayoutHolder {
+		JsonObject source;
+		MiningHotmLayout layout;
+		boolean failed;
+	}
+
+	private static final Map<String, LayoutHolder> LAYOUTS = new HashMap<>();
 
 	private record Rendered(List<Component> tooltip, ItemStack item) {}
 
+	/** "hotm" or "hotf": the constant is {root}layout.json, its tree is under the {root} key. */
+	private final String root;
 	private final Map<String, Rendered> cache = new LinkedHashMap<>();
 	private Object cacheKeyNodes;
 	private double cacheKeyHotm = Double.NaN;
 	private MiningHotmLayout cacheKeyLayout;
 	public int scroll = 0;
 
-	/** The parsed layout, rebuilt when the repo constant changes; null if missing or broken. */
+	public MiningHotmTree() {
+		this("hotm");
+	}
+
+	public MiningHotmTree(String root) {
+		this.root = root;
+	}
+
+	/** The parsed HOTM layout; null if missing or broken. */
 	static MiningHotmLayout layout() {
-		JsonObject src = NeuRepo.constant("hotmlayout");
+		return layout("hotm");
+	}
+
+	/** The parsed layout of constants/{root}layout.json, rebuilt when the repo constant changes; null if missing or broken. */
+	static MiningHotmLayout layout(String root) {
+		JsonObject src = NeuRepo.constant(root + "layout");
 		if (src == null) return null;
-		if (src != layoutSource) {
-			layoutSource = src;
-			layoutFailed = false;
+		LayoutHolder h = LAYOUTS.computeIfAbsent(root, k -> new LayoutHolder());
+		if (src != h.source) {
+			h.source = src;
+			h.failed = false;
 			try {
-				layout = new MiningHotmLayout(src);
+				h.layout = new MiningHotmLayout(src, root);
 			} catch (Exception e) {
-				NeuPv.LOGGER.error("Could not parse constants/hotmlayout.json", e);
-				layout = null;
-				layoutFailed = true;
+				NeuPv.LOGGER.error("Could not parse constants/{}layout.json", root, e);
+				h.layout = null;
+				h.failed = true;
 			}
 		}
-		return layoutFailed ? null : layout;
+		return h.failed ? null : h.layout;
 	}
 
 	public void resetCache() {
@@ -64,13 +90,18 @@ public final class MiningHotmTree {
 		cacheKeyNodes = null;
 	}
 
+	/** Number of perks evaluated for the last rendered tree (tests). */
+	public int renderedPerks() {
+		return cache.size();
+	}
+
 	/** NEU MiningPage.renderHotmTree. */
 	public void render(GuiGraphicsExtractor g, ProfileViewerScreen screen, int left, int top, int right, int bottom,
 		JsonObject nodes, double hotmLevel, int mouseX, int mouseY) {
-		MiningHotmLayout l = layout();
+		MiningHotmLayout l = layout(root);
 		if (l == null) {
 			Draw.centered(g, "§cMissing repo data", (left + right) / 2f, (top + bottom) / 2f - 5, true);
-			Draw.centered(g, "§c(hotmlayout.json)", (left + right) / 2f, (top + bottom) / 2f + 5, true);
+			Draw.centered(g, "§c(" + root + "layout.json)", (left + right) / 2f, (top + bottom) / 2f + 5, true);
 			return;
 		}
 		boolean hovered = left < mouseX && mouseX < right && top < mouseY && mouseY < bottom;
@@ -124,19 +155,38 @@ public final class MiningHotmTree {
 			try {
 				MiningHotmLayout.PerkState state = l.evaluate(perk, levels, hotmLevel);
 				for (String line : state.tooltip()) tt.add(Component.literal(line));
-				PvItem item = state.itemId() == null ? null : LegacyItems.fromRepo(state.itemId());
-				stack = item != null ? item.stack() : new ItemStack(Items.PAINTING);
+				stack = icon(state.itemId());
 			} catch (Exception e) {
-				NeuPv.LOGGER.error("Could not evaluate HOTM perk {}", perk.key, e);
+				NeuPv.LOGGER.error("Could not evaluate {} perk {}", root, perk.key, e);
 				tt.add(Component.literal("§c" + perk.name));
 				tt.add(Component.literal("§c<lisp-error>"));
 				stack = new ItemStack(Items.PAINTING);
+			}
+			// Addition: Hypixel keeps the level of a perk switched off in the tree menu ("toggle_<perk>": false).
+			JsonElement toggle = levels.get("toggle_" + perk.key);
+			if (toggle != null && toggle.isJsonPrimitive() && toggle.getAsJsonPrimitive().isBoolean() && !toggle.getAsBoolean()
+				&& levels.containsKey(perk.key)) {
+				tt.add(Component.empty());
+				tt.add(Component.literal("§cDISABLED"));
 			}
 			cache.put(perk.key, new Rendered(tt, stack));
 		}
 	}
 
-	/** Marks the selected pickaxe ability in its tooltip, as Hypixel does in the HOTM menu (not in NEU). */
+	/**
+	 * NEU repo item, else the vanilla item of that id: hotflayout.json uses modern blocks (PALE_OAK_BUTTON, OAK_SAPLING,
+	 * MANGROVE_ROOTS...) that the 1.8.9 repo does not have.
+	 */
+	private static ItemStack icon(String itemId) {
+		if (itemId == null) return new ItemStack(Items.PAINTING);
+		PvItem item = LegacyItems.fromRepo(itemId);
+		if (item != null) return item.stack();
+		Identifier id = Identifier.tryParse(itemId.toLowerCase(Locale.ROOT));
+		if (id != null && BuiltInRegistries.ITEM.containsKey(id)) return new ItemStack(BuiltInRegistries.ITEM.getValue(id));
+		return new ItemStack(Items.PAINTING);
+	}
+
+	/** Marks the selected pickaxe/axe ability in its tooltip, as Hypixel does in the tree menu (not in NEU). */
 	public void markSelectedAbility(String abilityKey) {
 		if (abilityKey == null) return;
 		Rendered r = cache.get(abilityKey);
