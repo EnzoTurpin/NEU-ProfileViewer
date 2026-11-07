@@ -148,35 +148,112 @@ public class GardenContestsPage extends PvPage {
 		}
 	}
 
+	/**
+	 * Full item lore of a toolkit tool. Hypixel only stores the tool's ExtraAttributes (no display name or lore), so
+	 * the lore is rebuilt like the in-game one: the repo item's lore (description, base stats, ability, requirements)
+	 * with the real level, counters, enchantments, gemstones, reforge and recombobulation filled in.
+	 */
 	private List<String> toolTooltip(GardenContests.Tool tool) {
 		CompoundTag ea = tool.attributes();
 		PvItem repo = repoItem(tool.id());
 		String name = repo == null ? "§f" + GardenContests.prettyId(tool.id()) : repo.displayName;
-		int rarity = repo == null ? -1 : repo.rarity();
+		int baseRarity = repo == null ? -1 : repo.rarity();
 		int upgrades = ea.getIntOr("rarity_upgrades", 0);
-		if (rarity >= 0) rarity = Math.min(rarity + upgrades, RARITY_COLOURS.length - 1);
+		int rarity = baseRarity < 0 ? -1 : Math.min(baseRarity + upgrades, RARITY_COLOURS.length - 1);
 		String plain = Fmt.stripColor(name);
 		String modifier = ea.getStringOr("modifier", null);
 		String colour = rarity >= 0 ? RARITY_COLOURS[rarity] : name.startsWith("§") && name.length() > 1 ? name.substring(0, 2) : "§f";
 		List<String> tt = new ArrayList<>();
 		tt.add(colour + (modifier == null ? "" : GardenContests.prettyId(modifier) + " ") + plain);
+
+		List<String> lore = repo == null ? new ArrayList<>(List.of("§8Farming Tool", "")) : new ArrayList<>(repo.lore);
+		// the repo's rarity line ("EPIC FARMING TOOL") is re-added at the end, recombobulated
+		String type = "";
+		if (baseRarity >= 0 && !lore.isEmpty()) {
+			String last = Fmt.stripColor(lore.get(lore.size() - 1)).trim();
+			String oldRarity = RARITY_NAMES[Math.min(baseRarity, RARITY_NAMES.length - 1)];
+			if (last.startsWith(oldRarity)) {
+				type = last.substring(oldRarity.length());
+				lore.remove(lore.size() - 1);
+			}
+		}
+		boolean inserted = false;
+		for (int i = 0; i < lore.size(); i++) {
+			String line = lore.get(i), clean = Fmt.stripColor(line).trim();
+			if (clean.equals("Right-click to view recipes!")) {
+				if (i + 1 < lore.size() && Fmt.stripColor(lore.get(i + 1)).trim().isEmpty()) i++;
+				continue;
+			}
+			if (clean.startsWith("Level ") && clean.contains("->")) {
+				// the repo's "Level 1 -> 2 (0/1k)" line and its progress bar: replaced by the tool's real data
+				if (i + 1 < lore.size() && lore.get(i + 1).contains("§m")) i++;
+				if (i + 1 < lore.size() && Fmt.stripColor(lore.get(i + 1)).trim().isEmpty()) i++;
+				addToolData(tt, ea, tool);
+				inserted = true;
+				continue;
+			}
+			if (modifier != null && clean.equals("This item can be reforged!")) continue;
+			tt.add(line);
+		}
+		if (!inserted) {
+			if (!tt.get(tt.size() - 1).isEmpty()) tt.add("");
+			addToolData(tt, ea, tool);
+		}
+		while (tt.size() > 1 && tt.get(tt.size() - 1).isEmpty()) tt.removeLast();
+		if (rarity >= 0) {
+			String c = RARITY_COLOURS[rarity] + "§l";
+			tt.add(upgrades > 0 ? c + "§ka§r " + c + RARITY_NAMES[rarity] + type + " §ka" : c + RARITY_NAMES[rarity] + type);
+		}
+		tt.add("");
+		tt.add("§8Toolkit slot: " + tool.crop().displayName);
+		return tt;
+	}
+
+	/** Level, counters, gemstones and enchantments of a tool, each block followed by a blank line. */
+	private static void addToolData(List<String> tt, CompoundTag ea, GardenContests.Tool tool) {
 		int level = ea.getIntOr("levelable_lvl", 0);
-		if (level > 0) tt.add("§7Level: §e" + level + (ea.getIntOr("levelable_overclocks", 0) > 0 ? " §8(+" + ea.getIntOr("levelable_overclocks", 0) + " overclocks)" : ""));
-		long cultivating = ea.getLongOr("farmed_cultivating", 0);
-		if (cultivating > 0) tt.add("§7Cultivating: §e" + Fmt.number(cultivating));
+		double exp = ea.getDoubleOr("levelable_exp", 0);
+		int overclocks = ea.getIntOr("levelable_overclocks", 0);
+		boolean any = false;
+		if (level > 0 || exp > 0) {
+			tt.add("§7Level §a" + Math.max(level, 1)
+				+ (overclocks > 0 ? " §8(+" + overclocks + " overclock" + (overclocks > 1 ? "s" : "") + ")" : "")
+				+ (exp > 0 ? " §8(" + Fmt.number((long) exp) + " xp)" : ""));
+			any = true;
+		}
 		long counter = ea.getLongOr("mined_crops", 0);
-		if (counter > 0) tt.add("§7Counter: §e" + Fmt.number(counter));
+		if (counter > 0) {
+			tt.add("§7Counter: §e" + Fmt.number(counter) + " " + tool.crop().displayName);
+			any = true;
+		}
+		long cultivating = ea.getLongOr("farmed_cultivating", 0);
+		if (cultivating > 0) {
+			tt.add("§7Cultivating: §e" + Fmt.number(cultivating));
+			any = true;
+		}
 		int ffd = ea.getIntOr("farming_for_dummies_count", 0);
-		if (ffd > 0) tt.add("§7Farming for Dummies: §e" + ffd + "§7/§a5");
+		if (ffd > 0) {
+			tt.add("§7Farming for Dummies: §e" + ffd + "§7/§a5");
+			any = true;
+		}
+		if (any) tt.add("");
+
+		String gems = gemstones(ea.getCompoundOrEmpty("gems"));
+		if (gems != null) {
+			tt.add(gems);
+			tt.add("");
+		}
+
 		CompoundTag enchants = ea.getCompoundOrEmpty("enchantments");
 		if (!enchants.isEmpty()) {
-			tt.add("");
 			List<String> names = new ArrayList<>(enchants.keySet());
 			names.sort(Comparator.comparing((String e) -> !e.startsWith("ultimate_")).thenComparing(e -> e));
 			StringBuilder line = new StringBuilder();
 			int onLine = 0;
 			for (String e : names) {
-				String text = (e.startsWith("ultimate_") ? "§d§l" : "§9") + GardenContests.prettyId(e) + " " + roman(enchants.getIntOr(e, 1));
+				boolean ultimate = e.startsWith("ultimate_");
+				String pretty = GardenContests.prettyId(ultimate ? e.substring("ultimate_".length()) : e);
+				String text = (ultimate ? "§d§l" : "§9") + pretty + " " + roman(enchants.getIntOr(e, 1));
 				if (onLine == 2) {
 					tt.add(line.toString());
 					line.setLength(0);
@@ -187,19 +264,44 @@ public class GardenContestsPage extends PvPage {
 				onLine++;
 			}
 			if (!line.isEmpty()) tt.add(line.toString());
+			tt.add("");
 		}
-		tt.add("");
-		if (rarity >= 0) {
-			// repo rarity line ("LEGENDARY HOE"), bumped when recombobulated
-			String type = "";
-			String last = Fmt.stripColor(repo.lore.get(repo.lore.size() - 1)).trim();
-			String oldRarity = RARITY_NAMES[Math.min(Math.max(rarity - upgrades, 0), RARITY_NAMES.length - 1)];
-			if (last.startsWith(oldRarity)) type = last.substring(oldRarity.length());
-			String c = RARITY_COLOURS[rarity] + "§l";
-			tt.add(upgrades > 0 ? c + "§ka§r " + c + RARITY_NAMES[rarity] + type + " §ka" : c + RARITY_NAMES[rarity] + type);
+	}
+
+	private static final Map<String, String> GEM_SYMBOLS = Map.ofEntries(
+		Map.entry("RUBY", "§c❤"), Map.entry("AMBER", "§6⸕"), Map.entry("SAPPHIRE", "§b✎"), Map.entry("JADE", "§a☘"),
+		Map.entry("AMETHYST", "§5❈"), Map.entry("TOPAZ", "§e✧"), Map.entry("JASPER", "§d❁"), Map.entry("OPAL", "§f❂"),
+		Map.entry("PERIDOT", "§2☘"), Map.entry("ONYX", "§8☠"), Map.entry("CITRINE", "§4☘"), Map.entry("AQUAMARINE", "§3α"));
+	private static final Map<String, String> QUALITY_COLOURS = Map.of(
+		"ROUGH", "§f", "FLAWED", "§a", "FINE", "§9", "FLAWLESS", "§5", "PERFECT", "§6");
+
+	/** Gemstone slots like Hypixel's "[☘] [☘]": bracket in the quality colour, grey when the slot is empty. */
+	private static String gemstones(CompoundTag gems) {
+		if (gems.isEmpty()) return null;
+		Set<String> slots = new java.util.TreeSet<>();
+		for (net.minecraft.nbt.Tag t : gems.getListOrEmpty("unlocked_slots")) {
+			if (t instanceof net.minecraft.nbt.StringTag(String v)) slots.add(v);
 		}
-		tt.add("§8Toolkit slot: " + tool.crop().displayName);
-		return tt;
+		for (String k : gems.keySet()) if (k.matches("[A-Z]+_\\d+")) slots.add(k);
+		if (slots.isEmpty()) return null;
+		StringBuilder sb = new StringBuilder();
+		for (String slot : slots) {
+			String kind = slot.substring(0, slot.lastIndexOf('_'));
+			String gem = gems.getStringOr(slot + "_gem", kind);
+			String symbol = GEM_SYMBOLS.getOrDefault(gem, "§f◆");
+			String quality = null;
+			net.minecraft.nbt.Tag v = gems.get(slot);
+			if (v instanceof net.minecraft.nbt.StringTag(String q)) quality = q;
+			else if (v instanceof CompoundTag c) quality = c.getStringOr("quality", null);
+			if (!sb.isEmpty()) sb.append(' ');
+			if (quality != null) {
+				String qc = QUALITY_COLOURS.getOrDefault(quality, "§7");
+				sb.append(qc).append('[').append(symbol).append(qc).append(']');
+			} else {
+				sb.append("§8[§7").append(Fmt.stripColor(symbol)).append("§8]");
+			}
+		}
+		return "§7Gemstones: " + sb;
 	}
 
 	// ---------------- Medals and Anita perks ----------------
