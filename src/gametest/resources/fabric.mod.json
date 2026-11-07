@@ -8,6 +8,7 @@
 		"fabric-client-gametest": [
 			"dev.neupv.test.ClickFixesGameTest",
 			"dev.neupv.test.CollectionsPetsGameTest",
+			"dev.neupv.test.CollectionsWave2GameTest",
 			"dev.neupv.test.CrimsonRiftGameTest",
 			"dev.neupv.test.DungeonGameTest",
 			"dev.neupv.test.ExtraGameTest",

@@ -39,7 +39,10 @@ public class CollectionsPage extends PvPage {
 		"XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"};
 	private static final int GREY = 0xFF808080, GOLD = 0xFFFFD700, TINT = 0xFFFFB900;
 
-	private static ItemStack selectedCategory = null;
+	/** Hypixel category id of the selected category (FARMING...); kept across PV openings like NEU's static. */
+	private static String selectedCategory = null;
+	/** Categories drawn last frame, for clicks and number keys. */
+	private List<CollectionsData.Category> categories = List.of();
 	private int page = 0;
 	private int maxPage = 0;
 	private CollectionsData.ProfileInfo info;
@@ -110,13 +113,17 @@ public class CollectionsPage extends PvPage {
 			return;
 		}
 
-		var cats = CollectionsData.catToCollection();
-		int collectionCatYSize = (int) (162f / (cats.size() - 1 + 0.0000001f));
+		categories = CollectionsData.layout(fetch.json());
+		if (categories.isEmpty()) return;
+		CollectionsData.Category current = categories.get(0);
+		for (CollectionsData.Category c : categories) if (c.id().equals(selectedCategory)) current = c;
+		selectedCategory = current.id();
+		int collectionCatYSize = (int) (162f / (categories.size() - 1 + 0.0000001f));
 		int yIndex = 0;
-		for (ItemStack stack : cats.keySet()) {
-			if (selectedCategory == null || !cats.containsKey(selectedCategory)) selectedCategory = stack;
+		for (CollectionsData.Category cat : categories) {
+			ItemStack stack = cat.icon();
 			int by = guiTop + 10 + collectionCatYSize * yIndex;
-			if (stack == selectedCategory) {
+			if (cat == current) {
 				drawFlippedButton(g, guiLeft + 7, by);
 				g.item(stack, guiLeft + 10, by + 3);
 				g.itemDecorations(Draw.font(), stack, guiLeft + 10, by + 3, String.valueOf(yIndex + 1));
@@ -131,8 +138,8 @@ public class CollectionsPage extends PvPage {
 			yIndex++;
 		}
 
-		List<String> collections = cats.get(selectedCategory);
-		List<String> minions = CollectionsData.catToMinion().get(selectedCategory);
+		List<String> collections = current.collections();
+		List<String> minions = current.minions();
 		// NEU used size / 20, which adds an empty page when a category has exactly 20 entries
 		maxPage = Math.max(collections != null ? (collections.size() - 1) / 20 : 0, minions != null ? (minions.size() - 1) / 20 : 0);
 
@@ -146,7 +153,8 @@ public class CollectionsPage extends PvPage {
 			if (page < maxPage) drawArrow(g, guiLeft + 100 + 15 + 250, guiTop + 6, true, rightHovered);
 		}
 
-		String catName = selectedCategory.getHoverName().getString();
+		page = Math.min(page, maxPage);
+		String catName = current.icon().getHoverName().getString();
 		Draw.centered(g, catName + " Collections", guiLeft + 134, guiTop + 14, true);
 
 		if (collections != null) {
@@ -154,7 +162,7 @@ public class CollectionsPage extends PvPage {
 				String collection = collections.get(i);
 				if (collection == null) continue;
 				CollectionsData.CollectionInfo col = info.collections().get(collection);
-				ItemStack item = CollectionsData.collectionDisplay().get(collection);
+				ItemStack item = current.displays().get(collection);
 				if (col == null || item == null) continue;
 				float x = 39 + COLLS_XPADDING + (COLLS_XPADDING + 20) * (j % COLLS_XCOUNT);
 				float y = 7 + COLLS_YPADDING + (COLLS_YPADDING + 20) * (j / COLLS_XCOUNT);
@@ -220,12 +228,10 @@ public class CollectionsPage extends PvPage {
 	@Override
 	public boolean keyPressed(int keyCode) {
 		int index = -1;
-		if (keyCode >= 49 && keyCode <= 54) index = keyCode - 49; // GLFW_KEY_1..6
-		else if (keyCode >= 321 && keyCode <= 326) index = keyCode - 321; // GLFW_KEY_KP_1..6
-		if (index < 0) return false;
-		List<ItemStack> keys = new ArrayList<>(CollectionsData.catToCollection().keySet());
-		if (index >= keys.size()) return false;
-		selectedCategory = keys.get(index);
+		if (keyCode >= 49 && keyCode <= 57) index = keyCode - 49; // GLFW_KEY_1..9
+		else if (keyCode >= 321 && keyCode <= 329) index = keyCode - 321; // GLFW_KEY_KP_1..9
+		if (index < 0 || index >= categories.size()) return false;
+		selectedCategory = categories.get(index).id();
 		page = 0;
 		playPressSound();
 		return true;
@@ -247,13 +253,12 @@ public class CollectionsPage extends PvPage {
 				}
 			}
 		}
-		var cats = CollectionsData.catToCollection();
-		int collectionCatYSize = (int) (162f / (cats.size() - 1 + 0.0000001f));
+		int collectionCatYSize = (int) (162f / (categories.size() - 1 + 0.0000001f));
 		int yIndex = 0;
-		for (ItemStack stack : cats.keySet()) {
+		for (CollectionsData.Category cat : categories) {
 			if (mouseX > guiLeft + 7 && mouseX < guiLeft + 7 + 20
 				&& mouseY > guiTop + 10 + collectionCatYSize * yIndex && mouseY < guiTop + 10 + collectionCatYSize * yIndex + 20) {
-				selectedCategory = stack;
+				selectedCategory = cat.id();
 				page = 0;
 				playPressSound();
 				return;
@@ -269,8 +274,18 @@ public class CollectionsPage extends PvPage {
 		page = 0;
 	}
 
-	/** For tests: select a category by index (0 = Farming ... 5 = Rift). */
+	/** For tests: select a category by its index in NEU's order (0 = Farming ... 5 = Rift). */
 	public static void selectCategory(int index) {
-		selectedCategory = new ArrayList<>(CollectionsData.catToCollection().keySet()).get(index);
+		selectedCategory = new String[]{"FARMING", "MINING", "COMBAT", "FORAGING", "FISHING", "RIFT"}[index];
+	}
+
+	/** For tests: the selected category id. */
+	public static String selectedCategory() {
+		return selectedCategory;
+	}
+
+	/** For tests: the collection page shown. */
+	public int page() {
+		return page;
 	}
 }
