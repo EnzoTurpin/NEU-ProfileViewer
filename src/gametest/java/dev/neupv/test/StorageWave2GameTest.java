@@ -82,6 +82,16 @@ public class StorageWave2GameTest implements FabricClientGameTest {
 			context.takeScreenshot("storage2-loadouts-pet");
 			clickArrow(context, screen[0], true);
 			context.takeScreenshot("storage2-loadouts-p2");
+			TestData.check(Integer.valueOf(1).equals(context.computeOnClient(mc -> field(page(screen[0]), "currentInventoryIndex"))),
+				"loadouts: the right arrow goes to page 2");
+			clickArrow(context, screen[0], true);
+			clickArrow(context, screen[0], true);
+			TestData.check(Integer.valueOf(3).equals(context.computeOnClient(mc -> field(page(screen[0]), "currentInventoryIndex"))),
+				"loadouts: two more clicks go to page 4");
+			click(context, screen[0], 320 - 6, 177 + 8);
+			TestData.check(Integer.valueOf(2).equals(context.computeOnClient(mc -> field(page(screen[0]), "currentInventoryIndex"))),
+				"loadouts: the left arrow goes back to page 3");
+			context.takeScreenshot("storage2-loadouts-p3");
 
 			// carnival masks (selector 9)
 			clickIcon(context, screen[0], 8);

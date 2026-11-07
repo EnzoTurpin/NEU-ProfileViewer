@@ -37,7 +37,6 @@ import java.util.regex.Pattern;
 /** The "Storage" tab: inventories on the main page, sacks on the second page. */
 public class InventoriesPage extends PvPage {
 	private static final Identifier PV_INVS = Draw.tex("gui/pv_invs.png");
-	private static final Identifier CHEST_GUI_TEXTURE = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
 	private static final Pattern FISHING_SPEED_PATTERN = Pattern.compile("^Fishing Speed: \\+(\\d+)");
 	private static final String[] RARITY_ARR = {"COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC", "SPECIAL", "VERY SPECIAL", "DIVINE"};
 
@@ -180,10 +179,15 @@ public class InventoriesPage extends PvPage {
 			drawSideItem(g, equipmentItems[i], guiLeft + 192, guiTop + 13 + 18 * i, mouseX, mouseY);
 		}
 
-		Cell[][][] inventories = getItemsForInventory(inventoryInfo, selectedInventory);
-		if (currentInventoryIndex >= inventories.length) currentInventoryIndex = inventories.length - 1;
-		if (currentInventoryIndex < 0) currentInventoryIndex = 0;
-		Cell[][] inventory = inventories[currentInventoryIndex];
+		// loadouts have their own page count (drawLoadouts clamps the index): clamping it here to the one empty
+		// "inventory" of the loadouts key sent every page change back to page 1
+		boolean loadoutsSelected = selectedInventory.equals(LOADOUTS);
+		Cell[][][] inventories = loadoutsSelected ? new Cell[1][][] : getItemsForInventory(inventoryInfo, selectedInventory);
+		if (!loadoutsSelected) {
+			if (currentInventoryIndex >= inventories.length) currentInventoryIndex = inventories.length - 1;
+			if (currentInventoryIndex < 0) currentInventoryIndex = 0;
+		}
+		Cell[][] inventory = loadoutsSelected ? null : inventories[currentInventoryIndex];
 
 		// best weapons / rods
 		if (bestWeapons == null) {
@@ -244,8 +248,7 @@ public class InventoriesPage extends PvPage {
 		int x = guiLeft + 320 - 176 / 2;
 		int y = guiTop + 101 - invSizeY / 2;
 
-		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, x, y, 0, 0, 176, inventoryRows * 18 + 17, 256, 256);
-		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, x, y + inventoryRows * 18 + 17, 0, 215, 176, 7, 256, 256);
+		InventoriesUi.pvChest(g, x, y, inventoryRows);
 
 		drawPageArrows(g, guiLeft, guiTop, mouseX, mouseY, inventories.length, true);
 
@@ -264,7 +267,7 @@ public class InventoriesPage extends PvPage {
 			}
 			title += " (Slot #" + (backpackSlot(selectedProfile, currentInventoryIndex) + 1) + ")";
 		}
-		g.text(Draw.font(), Draw.font().plainSubstrByWidth(title, 160), x + 8, y + 6, 0xFF404040, false);
+		g.text(Draw.font(), Draw.font().plainSubstrByWidth(title, 160), x + 8, y + 6, 0xFFFFFFFF, true);
 
 		// wardrobe: the set the player wears gets a green backdrop, like the lime dye of Hypixel's wardrobe
 		int equippedCol = -1;
