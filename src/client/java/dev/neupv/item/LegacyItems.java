@@ -214,9 +214,11 @@ public final class LegacyItems {
 		// Items whose repo entry became plain paper + a Hypixel resource-pack model (trophy fish, July 2026):
 		// off Hypixel that model is missing, so fall back to the skull texture they had before.
 		if (spec.internalName() != null && hypixelModel(spec.internalName()) == null) {
-			String old = legacyTexture(spec.internalName());
+			JsonObject old = legacyLook(spec.internalName());
 			if (old != null) {
-				spec = new LegacyStackSpec("skull", 3, spec.count(), spec.name(), spec.lore(), old, null, spec.glint(), null);
+				spec = new LegacyStackSpec(dev.neupv.util.J.str(old, "itemid", "stone"), dev.neupv.util.J.i(old, "damage", 0), spec.count(),
+					spec.name(), spec.lore(), dev.neupv.util.J.str(old, "texture", null),
+					old.has("color") ? old.get("color").getAsInt() : spec.color(), spec.glint() || dev.neupv.util.J.bool(old, "glint", false), null);
 			}
 		}
 		Item item = Items.BARRIER;
@@ -272,19 +274,22 @@ public final class LegacyItems {
 		}
 	}
 
-	private static JsonObject legacyTextures;
+	private static JsonObject legacyLooks;
 
-	/** Skull texture an item had in the NEU repo before it switched to a Hypixel model (assets/neupv/data/legacy_textures.json). */
-	private static String legacyTexture(String internalName) {
-		if (legacyTextures == null) {
-			try (InputStream in = LegacyItems.class.getResourceAsStream("/assets/neupv/data/legacy_textures.json")) {
-				legacyTextures = in == null ? new JsonObject()
-					: JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("textures");
+	/**
+	 * Look (item id, damage, skull texture, colour) an item had in the NEU repo before it became paper + a Hypixel
+	 * resource-pack model (assets/neupv/data/legacy_looks.json, ~840 items: trophy fish, equipment, abiphones...).
+	 */
+	private static JsonObject legacyLook(String internalName) {
+		if (legacyLooks == null) {
+			try (InputStream in = LegacyItems.class.getResourceAsStream("/assets/neupv/data/legacy_looks.json")) {
+				legacyLooks = in == null ? new JsonObject()
+					: JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("items");
 			} catch (Exception e) {
-				legacyTextures = new JsonObject();
+				legacyLooks = new JsonObject();
 			}
 		}
-		return legacyTextures.has(internalName) ? legacyTextures.get(internalName).getAsString() : null;
+		return legacyLooks.has(internalName) ? legacyLooks.getAsJsonObject(internalName) : null;
 	}
 
 	/** Some repo/API skull textures have broken base64 padding that makes authlib throw; normalise it. */
