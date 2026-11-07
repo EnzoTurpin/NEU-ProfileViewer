@@ -83,7 +83,8 @@ public class GardenContestsPage extends PvPage {
 			int y = top + 18 + (i % 7) * 16;
 			g.item(repoStack(crop.itemId), x, y);
 			GardenContests.Bracket best = s.highestBracket();
-			String value = s.personalBest > 0 ? (best == null ? "§7" : best.color) + Fmt.shortNumber(s.personalBest) : "§8-";
+			// values in white like NEU's Garden page, gold once the top bracket (Diamond) was reached; the bracket is in the tooltip
+			String value = s.personalBest > 0 ? (best == GardenContests.Bracket.DIAMOND ? "§6" : "§f") + Fmt.shortNumber(s.personalBest) : "§f-";
 			Draw.aligned(g, "§e" + crop.displayName, value, x + 18, y + 4, 86);
 			if (hover(x, y, 104, 16)) screen.tooltipToDisplay = PvWidgets.lines(cropTooltip(crop, s).toArray(String[]::new));
 		}
@@ -351,7 +352,7 @@ public class GardenContestsPage extends PvPage {
 	}
 
 	private static String perk(int value, int max) {
-		return (value >= max ? "§6" : "§f") + value + "§7/§a" + max;
+		return (value >= max ? "§6" : "§f") + value + "/" + max;
 	}
 
 	// ---------------- Greenhouse ----------------
@@ -365,7 +366,7 @@ public class GardenContestsPage extends PvPage {
 		alignedWithHover(g, "§eDiscovered", "§f" + d.discoveredGreenhouse.size(), x, top + 16, w, nameList("§aDiscovered Crops", d.discoveredGreenhouse));
 		int analyzedMutations = 0;
 		for (String id : grid) if (analyzed.contains(id)) analyzedMutations++;
-		alignedWithHover(g, "§eAnalyzed", (analyzedMutations >= grid.size() ? "§6" : "§f") + analyzedMutations + "§7/§a" + grid.size(), x, top + 27, w,
+		alignedWithHover(g, "§eAnalyzed", (analyzedMutations >= grid.size() ? "§6" : "§f") + analyzedMutations + "/" + grid.size(), x, top + 27, w,
 			nameList("§aAnalyzed Crops", d.analyzedGreenhouse));
 
 		int cols = 10;

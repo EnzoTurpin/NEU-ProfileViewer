@@ -233,7 +233,7 @@ public class HuntingPage extends PvPage {
 		int pages = Math.max(1, (info.attributes.size() + PER_PAGE - 1) / PER_PAGE);
 		page = Math.max(0, Math.min(page, pages - 1));
 
-		String title = "§3Attributes §7" + info.unlocked + "/" + info.possible;
+		String title = "§3Attributes " + (info.unlocked >= info.possible ? "§6" : "§f") + info.unlocked + "/" + info.possible;
 		Draw.centered(g, title, centerX, guiTop + 24, true);
 		int titleW = Draw.font().width(title);
 		if (hover(mouseX, mouseY, centerX - titleW / 2, guiTop + 19, titleW, 10)) {
@@ -250,7 +250,7 @@ public class HuntingPage extends PvPage {
 			boolean rightHover = page < pages - 1 && hover(mouseX, mouseY, guiLeft + 395, guiTop + 16, 12, 16);
 			if (page > 0) CollectionsPage.drawArrow(g, guiLeft + 253, guiTop + 16, false, leftHover);
 			if (page < pages - 1) CollectionsPage.drawArrow(g, guiLeft + 395, guiTop + 16, true, rightHover);
-			Draw.centered(g, "§7Page " + (page + 1) + "/" + pages, centerX, guiTop + 178, true);
+			Draw.centered(g, "§fPage " + (page + 1) + "/" + pages, centerX, guiTop + 178, true);
 		}
 
 		int start = page * PER_PAGE;
