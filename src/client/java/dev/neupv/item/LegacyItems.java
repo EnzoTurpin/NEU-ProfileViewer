@@ -218,7 +218,7 @@ public final class LegacyItems {
 			if (old != null) {
 				spec = new LegacyStackSpec(dev.neupv.util.J.str(old, "itemid", "stone"), dev.neupv.util.J.i(old, "damage", 0), spec.count(),
 					spec.name(), spec.lore(), dev.neupv.util.J.str(old, "texture", null),
-					old.has("color") ? old.get("color").getAsInt() : spec.color(), spec.glint() || dev.neupv.util.J.bool(old, "glint", false), null);
+					old.has("color") ? Integer.valueOf(old.get("color").getAsInt()) : spec.color(), spec.glint() || dev.neupv.util.J.bool(old, "glint", false), null);
 			}
 		}
 		Item item = Items.BARRIER;
