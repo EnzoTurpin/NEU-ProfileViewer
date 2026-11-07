@@ -59,7 +59,8 @@ public class ProfileViewerScreen extends Screen {
 		CRIMSON_ISLE(10, Items.NETHERRACK, "§4Crimson Isle"),
 		MUSEUM(11, Items.LEATHER_CHESTPLATE, "§6Museum"),
 		RIFT(12, Items.ENDER_EYE, "§5Rift"),
-		GARDEN(13, Items.GRASS_BLOCK, "§2Garden");
+		GARDEN(13, Items.GRASS_BLOCK, "§2Garden"),
+		HUNTING(14, Items.LEAD, "§3Hunting");
 
 		public final int id;
 		public final String name;
@@ -121,6 +122,7 @@ public class ProfileViewerScreen extends Screen {
 			pages.put(Page.MUSEUM, new MuseumPage(this));
 			pages.put(Page.RIFT, new RiftPage(this));
 			pages.put(Page.GARDEN, new GardenPage(this));
+			pages.put(Page.HUNTING, new HuntingPage(this));
 			for (Page p : Page.values()) pages.putIfAbsent(p, new NotPortedPage(this, p.name));
 		} catch (Exception e) {
 			crashPage = new CrashPage(this, e, currentPage.name());

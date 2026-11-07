@@ -35,7 +35,7 @@ public class PvConfig {
 	 */
 	public String lowestBinUrl = "";
 	/** Page order, same ids as NEU (0 = Skills ... 13 = Garden). */
-	public List<Integer> pageLayout = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
+	public List<Integer> pageLayout = new ArrayList<>(Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
 	public boolean alwaysShowBingoTab = false;
 	public boolean showPronounsInPv = false;
 	public boolean useSoopyNetworth = true;
@@ -59,6 +59,8 @@ public class PvConfig {
 		}
 		if (instance == null) instance = new PvConfig();
 		if (instance.pageLayout == null) instance.pageLayout = new PvConfig().pageLayout;
+		// tabs added after a config was written (e.g. 14 = Hunting) are appended so they show up
+		for (int id : new PvConfig().pageLayout) if (!instance.pageLayout.contains(id)) instance.pageLayout.add(id);
 		if (instance.previousProfileSearches == null) instance.previousProfileSearches = new ArrayList<>();
 		save();
 	}
