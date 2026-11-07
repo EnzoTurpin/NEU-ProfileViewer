@@ -22,6 +22,7 @@
 			"dev.neupv.test.ProfileViewerClientGameTest",
 			"dev.neupv.test.RealDataGameTest",
 			"dev.neupv.test.ResponsiveGameTest",
+			"dev.neupv.test.StorageWave2GameTest",
 			"dev.neupv.test.TrophyBestiaryBingoGameTest"
 		]
 	},

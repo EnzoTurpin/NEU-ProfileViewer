@@ -65,9 +65,11 @@ public class InventoriesPage extends PvPage {
 		TUNING_COEFFICIENTS.put("intelligence", 2f);
 	}
 
-	/** NEU invNameToDisplayMap order (also the 1-8 hotkeys). */
+	/** Not in NEU: Hypixel's loadouts (loadout.loadouts) and the carnival mask inventory (shared_inventory). */
+	private static final String LOADOUTS = "loadouts", CARNIVAL = "carnival_mask_inventory_contents";
+	/** NEU invNameToDisplayMap order (also the 1-9 hotkeys). */
 	private static final String[] INV_KEYS = {"inv_contents", "ender_chest_contents", "backpack_contents",
-		"personal_vault_contents", "talisman_bag", "wardrobe_contents", "potion_bag"};
+		"personal_vault_contents", "talisman_bag", "wardrobe_contents", "potion_bag", LOADOUTS, CARNIVAL};
 	private static Map<String, ItemStack> invNameToDisplayMap;
 	private static ItemStack fillerStack, inventoriesIcon, sacksIcon;
 
@@ -84,6 +86,13 @@ public class InventoriesPage extends PvPage {
 	private int currentInventoryIndex = 0;
 	private int arrowCount = -1, greenCandyCount = -1, purpleCandyCount = -1;
 	private static final Map<String, ItemStack> repoIcons = new HashMap<>();
+	/** loadout.* data (read once, see loadoutRead; stays null when Hypixel sent none). */
+	private InventoriesLoadouts loadoutData;
+	private boolean loadoutRead;
+	private List<PvItem> carnivalItems;
+	/** Backpack item per page (inventory.backpack_icons, same order as backpack_contents). */
+	private List<PvItem> backpackIcons;
+	private int wardrobeEquipped = -1;
 
 	private final InventoriesSacksPage sacksPage;
 
@@ -117,6 +126,8 @@ public class InventoriesPage extends PvPage {
 		m.put("talisman_bag", LegacyItems.icon(Items.GOLDEN_APPLE, "§7Accessory Bag"));
 		m.put("wardrobe_contents", LegacyItems.icon(Items.LEATHER_CHESTPLATE, "§7Wardrobe"));
 		m.put("potion_bag", LegacyItems.icon(Items.POTION, "§7Potion Bag"));
+		m.put(LOADOUTS, LegacyItems.icon(Items.ARMOR_STAND, "§7Loadouts"));
+		m.put(CARNIVAL, renamed("CARNIVAL_MASK_BAG", Items.CARVED_PUMPKIN, "§7Carnival Masks"));
 		invNameToDisplayMap = m;
 		fillerStack = new ItemStack(byId("black_stained_glass_pane"));
 		inventoriesIcon = LegacyItems.icon(Items.PAINTING, "§7Inventories");
@@ -203,6 +214,11 @@ public class InventoriesPage extends PvPage {
 			}
 		}
 
+		if (selectedInventory.equals(LOADOUTS)) {
+			drawLoadouts(g, guiLeft, guiTop, mouseX, mouseY, selectedProfile);
+			return;
+		}
+
 		if (inventory == null) {
 			String strToRender = "Inventory API not enabled!";
 			// The member json says which inventories Hypixel actually sent: if the inventory API is on but this one
@@ -227,26 +243,41 @@ public class InventoriesPage extends PvPage {
 		int invSizeY = inventoryRows * 18 + 17 + 7;
 		int x = guiLeft + 320 - 176 / 2;
 		int y = guiTop + 101 - invSizeY / 2;
-		int staticSelectorHeight = guiTop + 177;
 
 		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, x, y, 0, 0, 176, inventoryRows * 18 + 17, 256, 256);
 		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, x, y + inventoryRows * 18 + 17, 0, 215, 176, 7, 256, 256);
 
-		boolean leftHovered = false, rightHovered = false;
-		if ((Minecraft.getInstance().mouseHandler.isLeftPressed() || Minecraft.getInstance().mouseHandler.isRightPressed())) {
-			if (mouseY > staticSelectorHeight && mouseY < staticSelectorHeight + 16 && mouseX > guiLeft + 320 - 12 && mouseX < guiLeft + 320 + 12) {
-				if (mouseX < guiLeft + 320) leftHovered = true;
-				else rightHovered = true;
+		drawPageArrows(g, guiLeft, guiTop, mouseX, mouseY, inventories.length, true);
+
+		String title = Fmt.stripColor(invNameToDisplayMap.get(selectedInventory).getHoverName().getString());
+		if (selectedInventory.equals("backpack_contents")) {
+			// the real backpack of this page (inventory.backpack_icons), framed above the chest, and its name as title
+			List<PvItem> icons = backpackIcons(selectedProfile);
+			PvItem icon = currentInventoryIndex < icons.size() ? icons.get(currentInventoryIndex) : null;
+			if (icon != null) {
+				int ix = x, iy = y - 21;
+				InventoriesUi.itemButton(g, ix, iy, icon.stack());
+				if (mouseX >= ix && mouseX < ix + 20 && mouseY >= iy && mouseY < iy + 20) {
+					screen.tooltipToDisplay = PvWidgets.itemTooltip(icon);
+				}
+				title = Fmt.stripColor(icon.displayName);
+			}
+			title += " (Slot #" + (backpackSlot(selectedProfile, currentInventoryIndex) + 1) + ")";
+		}
+		g.text(Draw.font(), Draw.font().plainSubstrByWidth(title, 160), x + 8, y + 6, 0xFF404040, false);
+
+		// wardrobe: the set the player wears gets a green backdrop, like the lime dye of Hypixel's wardrobe
+		int equippedCol = -1;
+		if (selectedInventory.equals("wardrobe_contents")) {
+			int slot = wardrobeEquipped(selectedProfile) - 1;
+			if (slot >= 0 && slot / 9 == currentInventoryIndex) {
+				equippedCol = slot % 9;
+				for (int row = 0; row < inventory.length; row++) {
+					int sx = x + 8 + equippedCol * 18, sy = y + 18 + row * 18;
+					g.fill(sx, sy, sx + 16, sy + 16, 0x8055FF55);
+				}
 			}
 		}
-		if (currentInventoryIndex > 0) InventoriesUi.bigLeftArrow(g, guiLeft + 320 - 12, staticSelectorHeight, leftHovered);
-		if (currentInventoryIndex < inventories.length - 1) InventoriesUi.bigRightArrow(g, guiLeft + 320, staticSelectorHeight, rightHovered);
-
-		if (inventories.length > 1) {
-			String text = "Page " + (currentInventoryIndex + 1) + "/" + inventories.length;
-			g.text(Draw.font(), text, guiLeft + 320 - Draw.font().width(text) / 2, staticSelectorHeight - 10, 0xFFFFFFFF, true);
-		}
-		g.text(Draw.font(), Fmt.stripColor(invNameToDisplayMap.get(selectedInventory).getHoverName().getString()), x + 8, y + 6, 0xFF404040, false);
 
 		String search = searchField.getValue();
 		boolean searching = search != null && !search.isEmpty();
@@ -271,7 +302,66 @@ public class InventoriesPage extends PvPage {
 		}
 		// NEU translated z +50 then drew the grey; 26.3 draws GUI elements in submission order, over earlier items
 		for (int[] p : greyed) g.fill(p[0], p[1], p[0] + 16, p[1] + 16, 0x64000000);
-		if (stackToRender != null) screen.tooltipToDisplay = PvWidgets.itemTooltip(stackToRender);
+		if (stackToRender != null) {
+			List<Component> tt = PvWidgets.itemTooltip(stackToRender);
+			if (equippedCol >= 0 && mouseX >= x + 8 + equippedCol * 18 && mouseX <= x + 24 + equippedCol * 18) {
+				tt = new ArrayList<>(tt);
+				tt.add(Component.empty());
+				tt.add(Component.literal("§aEquipped"));
+			}
+			screen.tooltipToDisplay = tt;
+		}
+	}
+
+	/** NEU's page selector under the chest (big resource-pack arrows at guiTop + 177, "Page x/y" above). */
+	private void drawPageArrows(GuiGraphicsExtractor g, int guiLeft, int guiTop, int mouseX, int mouseY, int pages, boolean pageText) {
+		int staticSelectorHeight = guiTop + 177;
+		boolean leftHovered = false, rightHovered = false;
+		if ((Minecraft.getInstance().mouseHandler.isLeftPressed() || Minecraft.getInstance().mouseHandler.isRightPressed())) {
+			if (mouseY > staticSelectorHeight && mouseY < staticSelectorHeight + 16 && mouseX > guiLeft + 320 - 12 && mouseX < guiLeft + 320 + 12) {
+				if (mouseX < guiLeft + 320) leftHovered = true;
+				else rightHovered = true;
+			}
+		}
+		if (currentInventoryIndex > 0) InventoriesUi.bigLeftArrow(g, guiLeft + 320 - 12, staticSelectorHeight, leftHovered);
+		if (currentInventoryIndex < pages - 1) InventoriesUi.bigRightArrow(g, guiLeft + 320, staticSelectorHeight, rightHovered);
+		if (pageText && pages > 1) {
+			String text = "Page " + (currentInventoryIndex + 1) + "/" + pages;
+			g.text(Draw.font(), text, guiLeft + 320 - Draw.font().width(text) / 2, staticSelectorHeight - 10, 0xFFFFFFFF, true);
+		}
+	}
+
+	private void drawLoadouts(GuiGraphicsExtractor g, int guiLeft, int guiTop, int mouseX, int mouseY, SkyblockProfiles.SkyblockProfile profile) {
+		InventoriesLoadouts data = loadouts(profile);
+		if (data == null || data.loadouts.isEmpty()) {
+			Draw.centered(g, "§cHypixel's API sent no data", guiLeft + 317, guiTop + 101, true);
+			Draw.centered(g, "§cfor loadouts.", guiLeft + 317, guiTop + 112, true);
+			return;
+		}
+		int pages = data.pages();
+		currentInventoryIndex = Math.clamp(currentInventoryIndex, 0, pages - 1);
+		int n = Math.min(InventoriesLoadouts.PER_PAGE, data.loadouts.size() - currentInventoryIndex * InventoriesLoadouts.PER_PAGE);
+		int h = InventoriesLoadouts.panelHeight(n);
+		int x = guiLeft + 320 - 176 / 2;
+		int y = Math.min(guiTop + 101 - h / 2, guiTop + 174 - h);
+		data.draw(screen, g, x, y, currentInventoryIndex, mouseX, mouseY);
+		// the page number is in the panel's title bar (5 loadouts leave no room above the arrows)
+		drawPageArrows(g, guiLeft, guiTop, mouseX, mouseY, pages, false);
+	}
+
+	/** Hypixel's backpack slot (backpack_contents key) of the n-th displayed backpack. */
+	private static int backpackSlot(SkyblockProfiles.SkyblockProfile profile, int index) {
+		JsonObject bps = J.obj(profile.getProfileJson(), "inventory.backpack_contents");
+		if (bps == null) return index;
+		List<Integer> keys = new ArrayList<>();
+		for (String k : bps.keySet()) {
+			try {
+				keys.add(Integer.parseInt(k));
+			} catch (NumberFormatException ignored) {
+			}
+		}
+		keys.sort(null);
+		return index < keys.size() ? keys.get(index) : index;
 	}
 
 	private void drawInventorySelector(GuiGraphicsExtractor g, int guiLeft, int guiTop, int mouseX, int mouseY, SkyblockProfiles.SkyblockProfile selectedProfile) {
@@ -394,17 +484,25 @@ public class InventoriesPage extends PvPage {
 
 		SkyblockProfiles.SkyblockProfile selectedProfile = getSelectedProfile();
 		if (selectedProfile == null) return false;
-		Cell[][][] inventories = getItemsForInventory(selectedProfile.getInventoryInfo(), selectedInventory);
-		if (currentInventoryIndex >= inventories.length) currentInventoryIndex = inventories.length - 1;
-		if (currentInventoryIndex < 0) currentInventoryIndex = 0;
-		if (inventories[currentInventoryIndex] == null) return false;
+		int pages;
+		if (selectedInventory.equals(LOADOUTS)) {
+			InventoriesLoadouts data = loadouts(selectedProfile);
+			if (data == null || data.loadouts.isEmpty()) return false;
+			pages = data.pages();
+		} else {
+			Cell[][][] inventories = getItemsForInventory(selectedProfile.getInventoryInfo(), selectedInventory);
+			pages = inventories.length;
+			if (currentInventoryIndex >= pages) currentInventoryIndex = pages - 1;
+			if (currentInventoryIndex < 0) currentInventoryIndex = 0;
+			if (inventories[currentInventoryIndex] == null) return false;
+		}
 
 		int staticSelectorHeight = guiTop + 177;
 		if (mouseY > staticSelectorHeight && mouseY < staticSelectorHeight + 16 && mouseX > guiLeft + 320 - 12 && mouseX < guiLeft + 320 + 12) {
 			// NEU changed page even without an arrow shown (index then clamped); only move when there is a page to go to
 			if (mouseX < guiLeft + 320) {
 				if (currentInventoryIndex > 0) currentInventoryIndex--;
-			} else if (currentInventoryIndex < inventories.length - 1) {
+			} else if (currentInventoryIndex < pages - 1) {
 				currentInventoryIndex++;
 			}
 			return true;
@@ -439,6 +537,11 @@ public class InventoriesPage extends PvPage {
 		bestRods = null;
 		armorItems = null;
 		equipmentItems = null;
+		loadoutData = null;
+		loadoutRead = false;
+		carnivalItems = null;
+		backpackIcons = null;
+		wardrobeEquipped = -1;
 		currentInventoryIndex = 0;
 		arrowCount = -1;
 		greenCandyCount = -1;
@@ -511,7 +614,16 @@ public class InventoriesPage extends PvPage {
 		Cell[][][] cached = inventoryItems.get(invName);
 		if (cached != null) return cached;
 
-		List<PvItem> jsonInv = inventoryInfo.getOrDefault(invName, List.of());
+		if (invName.equals("wardrobe_contents")) {
+			InventoriesLoadouts data = loadouts(getSelectedProfile());
+			if (data != null && data.hasWardrobe()) {
+				Cell[][][] wardrobe = wardrobeFromLoadout(data);
+				inventoryItems.put(invName, wardrobe);
+				return wardrobe;
+			}
+		}
+		List<PvItem> jsonInv = invName.equals(CARNIVAL) ? carnivalItems(getSelectedProfile())
+			: inventoryInfo.getOrDefault(invName, List.of());
 		if (jsonInv.isEmpty()) return new Cell[1][][];
 
 		int jsonInvSize;
@@ -577,13 +689,106 @@ public class InventoriesPage extends PvPage {
 			inventories[i] = items;
 			if (backpacks) startNumberJ += backpackSizes.get(i);
 		}
+		if (invName.equals("wardrobe_contents")) fillEquippedWardrobe(inventories, inventoryInfo.get("inv_armor"));
 		inventoryItems.put(invName, inventories);
 		return inventories;
 	}
 
+	private InventoriesLoadouts loadouts(SkyblockProfiles.SkyblockProfile profile) {
+		if (!loadoutRead) {
+			loadoutRead = true;
+			loadoutData = InventoriesLoadouts.of(profile.getProfileJson());
+			if (loadoutData != null) {
+				Map<String, List<PvItem>> info = profile.getInventoryInfo();
+				loadoutData.fillEquipped(info.get("inv_armor"), info.get("equipment_contents"));
+			}
+		}
+		return loadoutData;
+	}
+
+	private List<PvItem> carnivalItems(SkyblockProfiles.SkyblockProfile profile) {
+		if (carnivalItems == null) {
+			carnivalItems = LegacyItems.decodeInventory(J.str(profile.getProfileJson(), "shared_inventory.carnival_mask_inventory_contents.data", null));
+		}
+		return carnivalItems;
+	}
+
+	/** inventory.backpack_icons in the order of getBackpackSizes() (backpack_contents keys sorted numerically). */
+	private List<PvItem> backpackIcons(SkyblockProfiles.SkyblockProfile profile) {
+		if (backpackIcons == null) {
+			List<PvItem> out = new ArrayList<>();
+			JsonObject bps = J.obj(profile.getProfileJson(), "inventory.backpack_contents");
+			if (bps != null) {
+				List<String> keys = new ArrayList<>(bps.keySet());
+				keys.sort(java.util.Comparator.comparingInt(k -> {
+					try {
+						return Integer.parseInt(k);
+					} catch (NumberFormatException e) {
+						return 0;
+					}
+				}));
+				for (String k : keys) {
+					PvItem icon = null;
+					for (PvItem p : LegacyItems.decodeInventory(J.str(profile.getProfileJson(), "inventory.backpack_icons." + k + ".data", null))) {
+						if (p != null) {
+							icon = p;
+							break;
+						}
+					}
+					out.add(icon);
+				}
+			}
+			backpackIcons = out;
+		}
+		return backpackIcons;
+	}
+
+	/** Wardrobe slot (1-based) the player wears; -1 if unknown. */
+	private int wardrobeEquipped(SkyblockProfiles.SkyblockProfile profile) {
+		if (wardrobeEquipped == -1) {
+			JsonObject pj = profile.getProfileJson();
+			wardrobeEquipped = J.i(pj, "inventory.wardrobe_equipped_slot", J.i(pj, "loadout.armor.equipped_set", 0));
+		}
+		return wardrobeEquipped;
+	}
+
+	/**
+	 * The wardrobe from loadout.armor, laid out like NEU's wardrobe_contents pages: 9 sets per page, one column per
+	 * set, rows helmet..boots. Sets are placed by their slot number (keys can skip numbers).
+	 */
+	private static Cell[][][] wardrobeFromLoadout(InventoriesLoadouts data) {
+		int maxId = data.armorSets.lastKey();
+		int pages = Math.max(1, (maxId + 8) / 9);
+		Cell[][][] out = new Cell[pages][4][9];
+		for (Map.Entry<Integer, PvItem[]> e : data.armorSets.entrySet()) {
+			int slot = e.getKey() - 1;
+			for (int row = 0; row < 4; row++) {
+				PvItem piece = e.getValue()[row];
+				if (piece != null) out[slot / 9][row][slot % 9] = new Cell(piece, false);
+			}
+		}
+		return out;
+	}
+
+	/** Old wardrobe_contents data: the equipped set is empty there too, show the worn armor (inv_armor, boots first). */
+	private void fillEquippedWardrobe(Cell[][][] pages, List<PvItem> invArmor) {
+		int slot = wardrobeEquipped(getSelectedProfile()) - 1;
+		if (slot < 0 || invArmor == null || invArmor.isEmpty() || slot / 9 >= pages.length) return;
+		Cell[][] page = pages[slot / 9];
+		if (page == null || page.length < 4) return;
+		for (int row = 0; row < 4; row++) {
+			Cell c = page[row][slot % 9];
+			if (c != null && !c.filler()) return;
+		}
+		for (int row = 0; row < 4; row++) {
+			int src = 3 - row;
+			if (src < invArmor.size() && invArmor.get(src) != null) page[row][slot % 9] = new Cell(invArmor.get(src), false);
+		}
+	}
+
 	private static boolean useActualMax(String invName) {
 		return switch (invName) {
-			case "talisman_bag", "fishing_bag", "potion_bag", "personal_vault_contents" -> true;
+			case "talisman_bag", "fishing_bag", "potion_bag", "personal_vault_contents", CARNIVAL -> true;
 			default -> false;
 		};
 	}
