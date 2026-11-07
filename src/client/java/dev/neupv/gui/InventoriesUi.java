@@ -54,6 +54,71 @@ final class InventoriesUi {
 		if (stack != null) g.item(stack, x + 2, y + 2);
 	}
 
+	// Colours of the PV's own panels and slots (pv_invs.png): vanilla's container look, half translucent and darker
+	private static final int PANEL_OUTLINE = 0x80000000, PANEL_LIGHT = 0x80555555, PANEL_DARK = 0x802C2C2C,
+		PANEL_BODY = 0x4D373737, PANEL_CORNER = 0x80373737;
+	private static final int SLOT_DARK = 0x80373737, SLOT_BODY = 0x808B8B8B, SLOT_LIGHT = 0x80FFFFFF;
+
+	/**
+	 * A container panel in the PV style (same shapes as vanilla's generic_54: 1px outline with rounded corners, 2px
+	 * bevel, but translucent dark colours like the slot columns of the Storage tab). Fills never overlap, so the
+	 * translucency is even.
+	 */
+	static void pvPanel(GuiGraphicsExtractor g, int x, int y, int w, int h) {
+		// outline and its rounded corners
+		g.fill(x + 3, y, x + w - 3, y + 1, PANEL_OUTLINE);
+		g.fill(x + 3, y + h - 1, x + w - 3, y + h, PANEL_OUTLINE);
+		g.fill(x, y + 3, x + 1, y + h - 3, PANEL_OUTLINE);
+		g.fill(x + w - 1, y + 3, x + w, y + h - 3, PANEL_OUTLINE);
+		pixel(g, x + 2, y + 1, PANEL_OUTLINE);
+		pixel(g, x + 1, y + 2, PANEL_OUTLINE);
+		pixel(g, x + w - 3, y + 1, PANEL_OUTLINE);
+		pixel(g, x + w - 2, y + 2, PANEL_OUTLINE);
+		pixel(g, x + 1, y + h - 3, PANEL_OUTLINE);
+		pixel(g, x + 2, y + h - 2, PANEL_OUTLINE);
+		pixel(g, x + w - 2, y + h - 3, PANEL_OUTLINE);
+		pixel(g, x + w - 3, y + h - 2, PANEL_OUTLINE);
+		// bevel: light top/left, dark bottom/right
+		g.fill(x + 3, y + 1, x + w - 3, y + 3, PANEL_LIGHT);
+		g.fill(x + 1, y + 3, x + 3, y + h - 3, PANEL_LIGHT);
+		pixel(g, x + 2, y + 2, PANEL_LIGHT);
+		g.fill(x + 3, y + h - 3, x + w - 3, y + h - 1, PANEL_DARK);
+		g.fill(x + w - 3, y + 3, x + w - 1, y + h - 3, PANEL_DARK);
+		pixel(g, x + w - 3, y + h - 3, PANEL_DARK);
+		pixel(g, x + w - 3, y + 2, PANEL_CORNER);
+		pixel(g, x + 2, y + h - 3, PANEL_CORNER);
+		g.fill(x + 3, y + 3, x + w - 3, y + h - 3, PANEL_BODY);
+	}
+
+	/** One 18x18 slot in the PV style; (x, y) is the slot's top-left corner (item drawn at x + 1, y + 1). */
+	static void pvSlot(GuiGraphicsExtractor g, int x, int y) {
+		g.fill(x, y, x + 17, y + 1, SLOT_DARK);
+		g.fill(x, y + 1, x + 1, y + 17, SLOT_DARK);
+		g.fill(x + 1, y + 1, x + 17, y + 17, SLOT_BODY);
+		g.fill(x + 1, y + 17, x + 18, y + 18, SLOT_LIGHT);
+		g.fill(x + 17, y + 1, x + 18, y + 17, SLOT_LIGHT);
+		pixel(g, x + 17, y, SLOT_BODY);
+		pixel(g, x, y + 17, SLOT_BODY);
+	}
+
+	/** A row of n PV slots, items at (x + 1 + 18 i, y + 1). */
+	static void pvSlotRow(GuiGraphicsExtractor g, int x, int y, int n) {
+		for (int i = 0; i < n; i++) pvSlot(g, x + 18 * i, y);
+	}
+
+	/**
+	 * Replacement of the vanilla chest (generic_54) in the PV style: a 176 x (rows*18 + 24) panel with a 9-wide
+	 * slot grid whose items go at (x + 8 + 18 col, y + 18 + 18 row), the title line at y + 6.
+	 */
+	static void pvChest(GuiGraphicsExtractor g, int x, int y, int rows) {
+		pvPanel(g, x, y, 176, rows * 18 + 24);
+		for (int r = 0; r < rows; r++) pvSlotRow(g, x + 7, y + 17 + 18 * r, 9);
+	}
+
+	private static void pixel(GuiGraphicsExtractor g, int x, int y, int colour) {
+		g.fill(x, y, x + 1, y + 1, colour);
+	}
+
 	/** RenderUtils.drawFloatingRectWithAlpha. */
 	static void floatingRect(GuiGraphicsExtractor g, int x, int y, int width, int height, int alpha, boolean shadow) {
 		int main = (alpha << 24) | 0xc0c0c0;

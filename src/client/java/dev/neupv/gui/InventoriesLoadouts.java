@@ -41,7 +41,6 @@ final class InventoriesLoadouts {
 	/** Loadouts drawn per page (each: a 10px label strip + a 9-slot row). */
 	static final int PER_PAGE = 5;
 	private static final int LABEL_H = 10, ROW_H = 18, ENTRY_H = LABEL_H + ROW_H;
-	private static final Identifier CHEST = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
 
 	record Loadout(int id, String name, int armorSetId, int equipmentSetId, String powerStone, int tuningSlot, String petUuid,
 				   int miningSlot, int foragingSlot) {}
@@ -170,21 +169,17 @@ final class InventoriesLoadouts {
 	void draw(ProfileViewerScreen screen, GuiGraphicsExtractor g, int x, int y, int page, int mouseX, int mouseY) {
 		int from = page * PER_PAGE, to = Math.min(loadouts.size(), from + PER_PAGE);
 		int n = Math.max(1, to - from);
-		// chest top (title bar), then per entry a blank strip (generic_54 v 126..136) and a slot row (v 17..35)
-		g.blit(RenderPipelines.GUI_TEXTURED, CHEST, x, y, 0, 0, 176, 17, 256, 256);
-		int cy = y + 17;
-		for (int i = 0; i < n; i++) {
-			g.blit(RenderPipelines.GUI_TEXTURED, CHEST, x, cy, 0, 126, 176, LABEL_H, 256, 256);
-			g.blit(RenderPipelines.GUI_TEXTURED, CHEST, x, cy + LABEL_H, 0, 17, 176, ROW_H, 256, 256);
-			cy += ENTRY_H;
+		// PV-style panel: title bar, then per entry a label strip and a slot row (9 slots: 4 armor, 4 equipment, pet)
+		InventoriesUi.pvPanel(g, x, y, 176, panelHeight(n));
+		if (!loadouts.isEmpty()) {
+			for (int i = 0; i < n; i++) InventoriesUi.pvSlotRow(g, x + 7, y + 17 + i * ENTRY_H + LABEL_H, 9);
 		}
-		g.blit(RenderPipelines.GUI_TEXTURED, CHEST, x, cy, 0, 215, 176, 7, 256, 256);
-		g.text(Draw.font(), "Loadouts", x + 8, y + 6, 0xFF404040, false);
+		g.text(Draw.font(), "Loadouts", x + 8, y + 6, 0xFFFFFFFF, true);
 		String pageStr = (page + 1) + "/" + pages();
-		g.text(Draw.font(), pageStr, x + 168 - Draw.font().width(pageStr), y + 6, 0xFF404040, false);
+		g.text(Draw.font(), pageStr, x + 168 - Draw.font().width(pageStr), y + 6, 0xFFFFFFFF, true);
 
 		if (loadouts.isEmpty()) {
-			g.text(Draw.font(), "No loadouts", x + 8, y + 17 + 1, 0xFF404040, false);
+			g.text(Draw.font(), "No loadouts", x + 8, y + 17 + 1, 0xFFAAAAAA, true);
 			return;
 		}
 		for (int i = from; i < to; i++) {
@@ -195,8 +190,8 @@ final class InventoriesLoadouts {
 			String name = Fmt.stripColor(l.name());
 			int maxNameW = 160 - stoneW - (stone == null ? 0 : 6);
 			if (Draw.font().width(name) > maxNameW) name = Draw.font().plainSubstrByWidth(name, maxNameW - 6) + "...";
-			g.text(Draw.font(), name, x + 8, ey + 1, 0xFF404040, false);
-			if (stone != null) g.text(Draw.font(), stone, x + 168 - stoneW, ey + 1, 0xFF5B3E99, false);
+			g.text(Draw.font(), name, x + 8, ey + 1, 0xFFFFFF55, true);
+			if (stone != null) g.text(Draw.font(), stone, x + 168 - stoneW, ey + 1, 0xFFFF55FF, true);
 			if (mouseX >= x + 7 && mouseX < x + 169 && mouseY >= ey && mouseY < ey + LABEL_H) {
 				screen.tooltipToDisplay = tooltip(l);
 			}

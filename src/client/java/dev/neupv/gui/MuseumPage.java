@@ -36,7 +36,6 @@ import java.util.Map;
 public class MuseumPage extends PvPage {
 	private static final Identifier PV_MUSEUM = Draw.tex("gui/pv_museum.png");
 	private static final Identifier PV_INVENTORIES = Draw.tex("gui/pv_inventories.png");
-	private static final Identifier CHEST_GUI_TEXTURE = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
 	// 1.8's resource_packs.png arrows are separate sprites since 1.20.2
 	private static final Identifier ARROW_LEFT = Identifier.withDefaultNamespace("transferable_list/unselect");
 	private static final Identifier ARROW_LEFT_HL = Identifier.withDefaultNamespace("transferable_list/unselect_highlighted");
@@ -148,8 +147,7 @@ public class MuseumPage extends PvPage {
 		int invSizeY = inventoryRows * 18 + 17 + 7;
 		int inventoryX = guiLeft + 251 - 176 / 2;
 		int inventoryY = guiTop + 101 - invSizeY / 2;
-		g.blit(RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, inventoryX, inventoryY, 0, 0, 176, inventoryRows * 18 + 17, 256, 256);
-		g.blit(RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, inventoryX, inventoryY + inventoryRows * 18 + 17, 0, 215, 176, 7, 256, 256);
+		InventoriesUi.pvChest(g, inventoryX, inventoryY, inventoryRows);
 
 		int startIndex = (onPage - 1) * 28;
 		if (selectedMuseumCategory.equals("special")) {

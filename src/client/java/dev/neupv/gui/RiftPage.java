@@ -25,7 +25,6 @@ import java.util.Optional;
 
 public class RiftPage extends PvPage {
 	private static final Identifier PV_RIFT = Draw.tex("gui/pv_rift.png");
-	private static final Identifier CHEST_GUI_TEXTURE = Identifier.withDefaultNamespace("textures/gui/container/generic_54.png");
 	private static final Identifier ARROW_LEFT = Identifier.withDefaultNamespace("transferable_list/unselect");
 	private static final Identifier ARROW_LEFT_HL = Identifier.withDefaultNamespace("transferable_list/unselect_highlighted");
 	private static final Identifier ARROW_RIGHT = Identifier.withDefaultNamespace("transferable_list/select");
@@ -121,9 +120,8 @@ public class RiftPage extends PvPage {
 		int invSizeY = rows * 18 + 17 + 7;
 		int inventoryX = guiLeft + 203 - 176 / 2;
 		int inventoryY = guiTop + 130 - invSizeY / 2;
-		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, inventoryX, inventoryY, 0, 0, 176, rows * 18 + 17, 256, 256);
-		g.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, CHEST_GUI_TEXTURE, inventoryX, inventoryY + rows * 18 + 17, 0, 215, 176, 7, 256, 256);
-		g.text(Draw.font(), inInventory ? "Inventory" : "Ender Chest", guiLeft + 122, inInventory ? guiTop + 88 : guiTop + 79, 0xFF404040, false);
+		InventoriesUi.pvChest(g, inventoryX, inventoryY, rows);
+		g.text(Draw.font(), inInventory ? "Inventory" : "Ender Chest", guiLeft + 122, inInventory ? guiTop + 88 : guiTop + 79, 0xFFFFFFFF, true);
 
 		if (!inInventory) {
 			if (rift.enderChest == null) {
