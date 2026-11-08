@@ -1,29 +1,29 @@
 # NEU Profile Viewer — Minecraft 26.3 (Fabric)
 
-Portage du profile viewer (`/pv`) de [NotEnoughUpdates](https://github.com/NotEnoughUpdates/NotEnoughUpdates)
-(Forge 1.8.9, archivé) vers Minecraft **26.3** / Fabric. Même interface, mêmes calculs, bugs connus corrigés,
-et les données SkyBlock ajoutées par Hypixel depuis la dernière version de NEU.
+A port of the [NotEnoughUpdates](https://github.com/NotEnoughUpdates/NotEnoughUpdates) profile viewer (`/pv`)
+(Forge 1.8.9, archived) to Minecraft **26.3** / Fabric. Same interface, same calculations, known bugs fixed,
+plus the SkyBlock data Hypixel added since the last NEU release.
 
-## Fonctionnalités
+## Features
 
-- Commandes `/pv [joueur]`, `/neuprofile`, `/cata`
-- Tous les onglets de NEU : Skills (+ niveau SkyBlock), Dungeons, Profile Stats (+ Hoppity), Storage (+ sacks),
+- Commands: `/pv [player]`, `/neuprofile`, `/cata`
+- Every NEU tab: Skills (+ SkyBlock level), Dungeons, Profile Stats (+ Hoppity), Storage (+ sacks),
   Collections, Pets, Mining (HOTM), Bingo, Trophy Fish, Bestiary, Crimson Isle, Museum, Rift, Garden
-- Ajouts par rapport à NEU 2.6.0 :
-  - onglet **Hunting** (skill Hunting, Attribute Shards, Safari, critters)
-  - **Heart of the Forest** dans l'onglet Mining, HOTM lu depuis la nouvelle donnée `skill_tree` (arbre sélectionné)
-  - Storage : wardrobe depuis `loadout`, **loadouts**, carnival masks, icônes réelles des backpacks et des sacs
-  - Garden : page **Contests** (Jacob, médailles, perks, farming toolkit avec lore complet, greenhouse)
-  - Profile Stats : case « Misc » et historique de la banque ; Dungeons : détail des runs ; Pets : règles Autopet
-  - nouvelles collections et cap de niveau Foraging
-- Interface adaptée à toutes les tailles de fenêtre et tous les GUI scale
-- Textures 1.8.9 des items (trophy fish, items devenus des modèles Hypixel) quand on n'est pas sur Hypixel
+- Additions over NEU 2.6.0:
+  - **Hunting** tab (Hunting skill, Attribute Shards, Safari, critters)
+  - **Heart of the Forest** in the Mining tab; HOTM read from the new `skill_tree` data (selected tree)
+  - Storage: wardrobe from `loadout`, **loadouts**, carnival masks, real backpack and bag icons
+  - Garden: **Contests** page (Jacob's contests, medals, perks, farming toolkit with full lore, greenhouse)
+  - Profile Stats: "Misc" box and bank history; Dungeons: run details; Pets: Autopet rules
+  - New collections and the Foraging level cap
+- Layout that adapts to every window size and GUI scale
+- 1.8.9 item textures (trophy fish, items that became Hypixel models) when you are not on Hypixel
 
 ## Configuration — `config/neupv.json`
 
 ```json
 {
-  "ursaUrl": "https://ton-proxy.example.org",
+  "ursaUrl": "https://your-proxy.example.org",
   "lowestBinUrl": "",
   "useSoopyNetworth": true,
   "displayWeight": true,
@@ -31,33 +31,35 @@ et les données SkyBlock ajoutées par Hypixel depuis la dernière version de NE
 }
 ```
 
-- **`ursaUrl` (obligatoire)** : un serveur [ursa-minor](https://github.com/NotEnoughUpdates/ursa-minor)
-  (Rust, AGPL-3.0) configuré avec **ta** clé API Hypixel. Sans lui, le PV affiche « No data proxy configured ».
-- `lowestBinUrl` (optionnel) : JSON `{"ITEM_ID": prix}` pour le networth local (le serveur de prix de NEU,
-  moulberry.codes, est hors ligne). Le networth Soopy reste la source par défaut, comme dans NEU.
+- **`ursaUrl` (required)**: an [ursa-minor](https://github.com/NotEnoughUpdates/ursa-minor) server
+  (Rust, AGPL-3.0) set up with **your own** Hypixel API key. Without it, the PV shows "No data proxy configured".
+- `lowestBinUrl` (optional): a JSON `{"ITEM_ID": price}` used for the local networth (NEU's price server,
+  moulberry.codes, is offline). Soopy's networth stays the default source, as in NEU.
 
-## Compiler / lancer
+## Build / run
 
-Java 25 requis.
+Requires Java 25.
 
 ```
-gradlew build                # jar dans build/libs/
-gradlew runClient            # lance Minecraft 26.3 avec le mod
-gradlew runClientGameTest    # tests automatisés : vrai client, profils de test, captures dans build/run/clientGameTest/screenshots
+gradlew build                # jar in build/libs/
+gradlew runClient            # starts Minecraft 26.3 with the mod
+gradlew runClientGameTest    # automated tests: real client, test profiles, screenshots in build/run/clientGameTest/screenshots
 ```
 
-## Différences volontaires avec NEU 2.6.0
+## Intentional differences from NEU 2.6.0
 
-- Magical Power : quand deux paliers d'une même famille sont dans le sac, c'est le palier inférieur qui est écarté (NEU écartait le supérieur).
-- Pseudo inexistant : message « Unknown player » (NEU restait bloqué sur Loading).
-- Erreurs réseau/proxy affichées (NEU les avalait → chargement infini) ; un 401 du proxy invalide réellement le token.
-- Plus de crash volontaire du jeu après 1 h sur l'écran de chargement ; la page de crash ne dépend plus du modèle 3D.
-- Networth local calculé en `long` (NEU plafonnait à ~2,1 milliards) et compte la banque du profil.
-- Ender chest : les pages gardent leurs 45 slots (NEU coupait la dernière page).
-- `weight.json` / `sblevels.json`, supprimés de NEU-REPO le 30/10/2026, sont embarqués.
+- Magical Power: when two tiers of the same accessory family are in the bag, the lower tier is dropped (NEU dropped the higher one).
+- Unknown player name: shows "Unknown player" (NEU stayed stuck on Loading).
+- Network/proxy errors are shown (NEU swallowed them, so it loaded forever); a 401 from the proxy really invalidates the token.
+- No more intentional game crash after 1 hour on the loading screen; the crash page no longer depends on the 3D model.
+- Local networth computed as a `long` (NEU capped it at ~2.1 billion) and includes the profile bank.
+- Ender chest: pages keep all 45 slots (NEU cut the last page short).
+- `weight.json` / `sblevels.json`, removed from NEU-REPO on 2026-10-30, are bundled.
 
-## Licences
+## Licenses
 
-- Code dérivé de NotEnoughUpdates : **LGPL-3.0-or-later** (voir `LICENSE`), en-têtes d'attribution dans chaque fichier.
-- Textures et panoramas : NotEnoughUpdates (LGPL-3.0). Données NEU-REPO (MIT, `assets/neupv/data/NEU-REPO-LICENSE.txt`).
-- Table d'items 1.8 : générée depuis PrismarineJS minecraft-data (MIT).
+- Code derived from NotEnoughUpdates: **LGPL-3.0-or-later** (see `LICENSE`), attribution headers in every file.
+- Textures and panoramas: NotEnoughUpdates (LGPL-3.0). NEU-REPO data (MIT, `assets/neupv/data/NEU-REPO-LICENSE.txt`).
+- 1.8 item table: generated from PrismarineJS minecraft-data (MIT).
+
+*Not affiliated with NotEnoughUpdates or Hypixel.*
